@@ -29,7 +29,7 @@ SPDX-License-Identifier: EPL-2.0
 The project maintains the following source code repositories:
 
 * http://git.eclipse.org/c/emf/org.eclipse.mwe.git
-* https://github.com/eclipse/mwe
+* https://github.com/eclipse-mwe/mwe
 
 ## Third-party Content
 

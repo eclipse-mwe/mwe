@@ -23,7 +23,7 @@ more.
 
 The project maintains the following source code repositories
 
-* https://github.com/eclipse/mwe
+* https://github.com/eclipse-mwe/mwe
 
 This project uses Github to track ongoing development and issues.
 

@@ -332,8 +332,8 @@
 		</profile>
 	</profiles>
 	<scm>
-		<connection>scm:git:https://github.com/eclipse/mwe.git</connection>
-		<developerConnection>scm:git:https://github.com/eclipse/mwe.git</developerConnection>
+		<connection>scm:git:https://github.com/eclipse-mwe/mwe.git</connection>
+		<developerConnection>scm:git:https://github.com/eclipse-mwe/mwe.git</developerConnection>
 		<url>git@github.com:eclipse/mwe.git</url>
 	</scm>
 	<url>https://projects.eclipse.org/projects/modeling.emf.mwe</url>

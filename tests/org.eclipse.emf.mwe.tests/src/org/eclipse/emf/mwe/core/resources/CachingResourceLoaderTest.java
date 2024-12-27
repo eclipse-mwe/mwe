@@ -28,16 +28,18 @@ public class CachingResourceLoaderTest extends Assert {
 		CachingResourceLoaderImpl loader = new CachingResourceLoaderImpl(delegatingResourceLoader);
 		String uri = getClass().getCanonicalName().replace('.', '/') + ".txt";
 		URL resource = loader.getResource(uri);
-		InputStream stream1 = loader.getResourceAsStream(uri);
-		InputStream stream2 = loader.getResourceAsStream(uri);
-		InputStream stream3 = resource.openStream();
-		String text1 = new BufferedReader(new InputStreamReader(stream1)).readLine().trim();
-		String text2 = new BufferedReader(new InputStreamReader(stream2)).readLine().trim();
-		String text3 = new BufferedReader(new InputStreamReader(stream3)).readLine().trim();
-		assertEquals("Foo", text1);
-		assertEquals("Foo", text2);
-		assertEquals("Foo", text3);
-
+		try (InputStream stream1 = loader.getResourceAsStream(uri); BufferedReader reader1 = new BufferedReader(new InputStreamReader(stream1))) {
+			String text1 = reader1.readLine().trim();
+			assertEquals("Foo", text1);
+		}
+		try (InputStream stream2 = loader.getResourceAsStream(uri); BufferedReader reader2 = new BufferedReader(new InputStreamReader(stream2))) {
+			String text2 = reader2.readLine().trim();
+			assertEquals("Foo", text2);
+		}
+		try (InputStream stream3 = resource.openStream(); BufferedReader reader3 = new BufferedReader(new InputStreamReader(stream3))) {
+			String text3 = reader3.readLine().trim();
+			assertEquals("Foo", text3);
+		}
 		assertEquals(0, delegatingResourceLoader.getResourceAsStream);
 		assertEquals(1, delegatingResourceLoader.getResource);
 		loader.getResource(uri);

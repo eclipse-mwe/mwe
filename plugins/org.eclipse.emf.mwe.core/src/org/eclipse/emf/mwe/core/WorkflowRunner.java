@@ -196,7 +196,7 @@ public class WorkflowRunner {
 		final Options options = new Options();
 
 		options.addOption(Option.builder(MONITOR)
-				.hasArgs()
+				.hasArg()
 				.argName("className,moreArgs")
 				.desc(
 						"the name of a class that implements ProgressMonitor. More arguments can be appended that will be injected to the monitor,"
@@ -207,19 +207,19 @@ public class WorkflowRunner {
 				.build());
 
 		final Option paramOption = Option.builder(PARAM).argName("key=value")
-				.desc("external property that is handled as workflow property").hasArgs().build();
+				.desc("external property that is handled as workflow property").hasArg().build();
 		paramOption.setLongOpt("param");
 		options.addOption(paramOption);
 
 		options.addOption(Option.builder(CMDL)
-				.hasArgs()
+				.hasArg()
 				.argName("className")
 				.desc(
 						"the name of a class that implements a public method 'public void processCmdLine(String[] cmdLineArgs, Map paramsToUseInWorkflow, WorkflowContext ctx)'.")
 				.longOpt("cmdLineProcessor").build());
 
 		final Option runnerOption = Option.builder(ENGINE).argName("className")
-				.desc("WorkflowRunnerEngine class").hasArgs().build();
+				.desc("WorkflowRunnerEngine class").hasArg().build();
 		runnerOption.setLongOpt("engine");
 		options.addOption(runnerOption);
 

@@ -29,9 +29,9 @@
 <unit id="org.junit" version="0.0.0"/>
 <unit id="org.apache.commons.cli" version="1.9.0"/>
 <unit id="org.apache.commons.commons-logging" version="0.0.0"/>
-<unit id="com.google.guava" version="33.4.0.jre"/>
-<unit id="com.google.guava.failureaccess" version="1.0.2"/>
-<repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-03"/>
+<unit id="com.google.guava" version="33.4.6.jre"/>
+<unit id="com.google.guava.failureaccess" version="1.0.3"/>
+<repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2025-06"/>
 </location>
 </locations>
 </target>

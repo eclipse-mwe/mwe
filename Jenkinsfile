@@ -1,3 +1,10 @@
+def secrets = [
+  [path: 'cbi/modeling.emf.mwe/develocity.eclipse.org', secretValues: [
+    [envVar: 'DEVELOCITY_ACCESS_KEY', vaultKey: 'api-token']
+    ]
+  ]
+]
+
 pipeline {
   agent {
     label "ubuntu-2404"
@@ -258,7 +265,8 @@ EOF
 }
 
 def buildProject(targetPlatform, forceLocalDeployment = false, tychoVersion = "4.0.10") {
-  withEnv(["TARGET_PLATFORM=$targetPlatform", "FORCE_LOCAL_DEPLOYMENT=$forceLocalDeployment", "TYCHO_VERSION=$tychoVersion"]) {
+  withVault([vaultSecrets: secrets]) {
+    withEnv(["TARGET_PLATFORM=$targetPlatform", "FORCE_LOCAL_DEPLOYMENT=$forceLocalDeployment", "TYCHO_VERSION=$tychoVersion"]) {
     sh '''
       GOALS='clean deploy'
       if [ "${FORCE_LOCAL_DEPLOYMENT}" == "true" ] || [ "${BRANCH_NAME}" != "master" ] && [ "${RELEASE_TYPE}" == "Integration" ] && [ "${FORCE_PUBLISH}" != "true" ]; then
@@ -284,5 +292,6 @@ def buildProject(targetPlatform, forceLocalDeployment = false, tychoVersion = "4
       ls -la
       find . -name "*my-local-snapshots-dir*"
     '''
+    }
   }
 }

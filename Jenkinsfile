@@ -281,6 +281,7 @@ def buildProject(targetPlatform, forceLocalDeployment = false, tychoVersion = "4
 
       mvn \
         -e -f maven/org.eclipse.emf.mwe2.parent/pom.xml \
+        -Ddevelocity.storage.directory=$WORKSPACE/.m2/.develocity \
         -Dtycho-version=${TYCHO_VERSION} \
         -Dsign.skip=false \
         -DtestFailureIgnore=true \

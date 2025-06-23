@@ -62,6 +62,8 @@
 			</snapshots>
 		</pluginRepository>
 	</pluginRepositories>
+
+	
 	
 	<build>
 		<sourceDirectory>src</sourceDirectory>
@@ -151,39 +153,6 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.sonatype.central</groupId>
-				<artifactId>central-publishing-maven-plugin</artifactId>
-				<version>0.8.0</version>
-				<extensions>true</extensions>
-				<configuration>
-					<publishingServerId>central</publishingServerId>
-					<skipPublishing>${p2-deploy-only}</skipPublishing>
-					<excludeArtifacts>
-						<excludeArtifact>org.eclipse.emf.mwe.activities</excludeArtifact>      
-						<excludeArtifact>org.eclipse.emf.mwe.ui</excludeArtifact>              
-						<excludeArtifact>org.eclipse.emf.mwe.ui.simpleEditor</excludeArtifact> 
-						<excludeArtifact>org.eclipse.emf.mwe.doc</excludeArtifact>             
-						<excludeArtifact>org.eclipse.emf.mwe.sdk</excludeArtifact>             
-						<excludeArtifact>org.eclipse.emf.mwe2.language.ide</excludeArtifact>   
-						<excludeArtifact>org.eclipse.emf.mwe2.language.ui</excludeArtifact>    
-						<excludeArtifact>org.eclipse.emf.mwe2.launch.ui</excludeArtifact>      
-						<excludeArtifact>org.eclipse.emf.mwe2.features-parent</excludeArtifact>
-						<excludeArtifact>org.eclipse.emf.mwe.core.feature</excludeArtifact>    
-						<excludeArtifact>org.eclipse.emf.mwe.doc.feature</excludeArtifact>     
-						<excludeArtifact>org.eclipse.emf.mwe.ui.feature</excludeArtifact>      
-						<excludeArtifact>org.eclipse.emf.mwe2.runtime.sdk</excludeArtifact>    
-						<excludeArtifact>org.eclipse.emf.mwe2.launcher</excludeArtifact>       
-						<excludeArtifact>org.eclipse.emf.mwe2.language.sdk</excludeArtifact>   
-						<excludeArtifact>tests-parent</excludeArtifact>                        
-						<excludeArtifact>org.eclipse.emf.mwe.tests</excludeArtifact>           
-						<excludeArtifact>org.eclipse.emf.mwe2.language.tests</excludeArtifact> 
-						<excludeArtifact>org.eclipse.emf.mwe2.repository</excludeArtifact>     
-						<excludeArtifact>org.eclipse.emf.mwe2.target</excludeArtifact>
-						<excludeArtifact>org.eclipse.emf.mwe2.target.nightly</excludeArtifact>
-					</excludeArtifacts>
-				</configuration>
 			</plugin>
 		</plugins>
 		<pluginManagement>
@@ -348,6 +317,46 @@
 						</plugin>
 					</plugins>
 				</pluginManagement>
+			</build>
+		</profile>
+		<profile>
+			<id>sonatype-oss-release</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<version>0.8.0</version>
+						<extensions>true</extensions>
+						<configuration>
+							<publishingServerId>central</publishingServerId>
+							<skipPublishing>${p2-deploy-only}</skipPublishing>
+							<excludeArtifacts>
+								<excludeArtifact>org.eclipse.emf.mwe.activities</excludeArtifact>      
+								<excludeArtifact>org.eclipse.emf.mwe.ui</excludeArtifact>              
+								<excludeArtifact>org.eclipse.emf.mwe.ui.simpleEditor</excludeArtifact> 
+								<excludeArtifact>org.eclipse.emf.mwe.doc</excludeArtifact>             
+								<excludeArtifact>org.eclipse.emf.mwe.sdk</excludeArtifact>             
+								<excludeArtifact>org.eclipse.emf.mwe2.language.ide</excludeArtifact>   
+								<excludeArtifact>org.eclipse.emf.mwe2.language.ui</excludeArtifact>    
+								<excludeArtifact>org.eclipse.emf.mwe2.launch.ui</excludeArtifact>      
+								<excludeArtifact>org.eclipse.emf.mwe2.features-parent</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe.core.feature</excludeArtifact>    
+								<excludeArtifact>org.eclipse.emf.mwe.doc.feature</excludeArtifact>     
+								<excludeArtifact>org.eclipse.emf.mwe.ui.feature</excludeArtifact>      
+								<excludeArtifact>org.eclipse.emf.mwe2.runtime.sdk</excludeArtifact>    
+								<excludeArtifact>org.eclipse.emf.mwe2.launcher</excludeArtifact>       
+								<excludeArtifact>org.eclipse.emf.mwe2.language.sdk</excludeArtifact>   
+								<excludeArtifact>tests-parent</excludeArtifact>                        
+								<excludeArtifact>org.eclipse.emf.mwe.tests</excludeArtifact>           
+								<excludeArtifact>org.eclipse.emf.mwe2.language.tests</excludeArtifact> 
+								<excludeArtifact>org.eclipse.emf.mwe2.repository</excludeArtifact>     
+								<excludeArtifact>org.eclipse.emf.mwe2.target</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe2.target.nightly</excludeArtifact>
+							</excludeArtifacts>
+						</configuration>
+					</plugin>
+				</plugins>
 			</build>
 		</profile>
 	</profiles>

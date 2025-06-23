@@ -4,3 +4,4 @@ target
 *.jar
 /build-result/
 .m2
+.mvn/.develocity/develocity-workspace-id

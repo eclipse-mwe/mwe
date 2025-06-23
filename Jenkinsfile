@@ -261,7 +261,7 @@ def buildProject(targetPlatform, forceLocalDeployment = false, tychoVersion = "4
   withEnv(["TARGET_PLATFORM=$targetPlatform", "FORCE_LOCAL_DEPLOYMENT=$forceLocalDeployment", "TYCHO_VERSION=$tychoVersion"]) {
     sh '''
       GOALS='clean deploy'
-      if [ "${FORCE_LOCAL_DEPLOYMENT}" == "true" ] || [ "${BRANCH_NAME}" != "master" ] && [ "${RELEASE_TYPE}" == "Integration" ] && [ "${FORCE_PUBLISH}" != "true" ]; then
+      if [ "${TARGET_PLATFORM}" == "org.eclipse.emf.mwe2.target.nightly" ] || [ "${FORCE_LOCAL_DEPLOYMENT}" == "true" ] || [ "${BRANCH_NAME}" != "master" ] && [ "${RELEASE_TYPE}" == "Integration" ] && [ "${FORCE_PUBLISH}" != "true" ]; then
         GOALS="${GOALS} -DaltDeploymentRepository=snapshot-repo::default::file:./my-local-snapshots-dir"
       else
         GOALS="${GOALS} -Psonatype-oss-release"

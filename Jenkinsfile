@@ -85,7 +85,7 @@ pipeline {
       } // END steps
       post {
         success {
-          archiveArtifacts artifacts: 'git-repo/**/my-local-snapshots-dir/**, git-repo/**/maven/org.eclipse.emf.mwe2.repository/target/repository/**, git-repo/**/maven/org.eclipse.emf.mwe2.repository/target/emft-mwe-2-lang-Update-*.zip, git-repo/**/maven/org.eclipse.emf.mwe2.parent/target/central-staging/central-bundle.zip'
+          archiveArtifacts artifacts: 'git-repo/**/my-local-snapshots-dir/**, git-repo/**/maven/org.eclipse.emf.mwe2.repository/target/repository/**, git-repo/**/maven/org.eclipse.emf.mwe2.repository/target/emft-mwe-2-lang-Update-*.zip, git-repo/**/maven/org.eclipse.emf.mwe2.parent/target/central-*/central-bundle.zip'
         }
       }
     } // END stage

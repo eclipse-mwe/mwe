@@ -10,6 +10,9 @@
 	<artifactId>org.eclipse.emf.mwe2.plugins-parent</artifactId>
 	<packaging>pom</packaging>
 	<name>org.eclipse.emf.mwe2.plugins-parent</name>
+	<properties>
+		<p2-deploy-only>true</p2-deploy-only>
+	</properties>
 	<modules>
 		<module>org.eclipse.emf.mwe.activities</module>
 		<module>org.eclipse.emf.mwe.core</module>
@@ -92,4 +95,18 @@
 			</plugin>
 		</plugins>
 	</build>
+	<profiles>
+		<profile>
+			<id>maven-deployable</id>
+			<!-- deploy this parent, but not the children -->
+			<activation>
+				<file>
+					<missing>META-INF/MANIFEST.MF</missing>
+				</file>
+			</activation>
+			<properties>
+				<p2-deploy-only>false</p2-deploy-only>
+			</properties>
+		</profile>
+	</profiles>
 </project>

@@ -12,9 +12,6 @@
 	<packaging>eclipse-plugin</packaging>
 	<name>org.eclipse.emf.mwe.core</name>
 
-	<properties>
-		<p2-deploy-only>false</p2-deploy-only>
-	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>org.eclipse.emf</groupId>

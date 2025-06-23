@@ -10,7 +10,4 @@
 
 	<packaging>eclipse-target-definition</packaging>
 	<artifactId>org.eclipse.emf.mwe2.target</artifactId>
-	<properties>
-		<p2-deploy-only>true</p2-deploy-only>
-	</properties>
 </project>

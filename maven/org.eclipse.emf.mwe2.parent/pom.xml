@@ -30,7 +30,7 @@
 		<sign.skip>true</sign.skip>
 		<gpg-skip>${sign.skip}</gpg-skip>
 		<tycho.localArtifacts>ignore</tycho.localArtifacts>
-		<!-- p2-deploy-only = true skips the deploy step -->
+		<!-- p2-deploy-only = true skips the deploy step TODO rename -->
 		<p2-deploy-only>false</p2-deploy-only>
 		<BUILD_TYPE>N</BUILD_TYPE>
 		<BUILD_ALIAS />
@@ -158,6 +158,7 @@
 				<extensions>true</extensions>
 				<configuration>
 					<publishingServerId>central</publishingServerId>
+					<skipPublishing>${p2-deploy-only}</skipPublishing>
 					<excludeArtifacts>
 						<excludeArtifact>org.eclipse.emf.mwe2.plugins-parent</excludeArtifact> 
 						<excludeArtifact>org.eclipse.emf.mwe.activities</excludeArtifact>      
@@ -179,6 +180,7 @@
 						<excludeArtifact>org.eclipse.emf.mwe.tests</excludeArtifact>           
 						<excludeArtifact>org.eclipse.emf.mwe2.language.tests</excludeArtifact> 
 						<excludeArtifact>org.eclipse.emf.mwe2.repository</excludeArtifact>     
+						<excludeArtifact>org.eclipse.emf.mwe2.target</excludeArtifact>
 						<excludeArtifact>org.eclipse.emf.mwe2.target.nightly</excludeArtifact>
 					</excludeArtifacts>
 				</configuration>

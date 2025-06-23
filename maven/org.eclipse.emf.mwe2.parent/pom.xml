@@ -330,7 +330,6 @@
 						<extensions>true</extensions>
 						<configuration>
 							<publishingServerId>central</publishingServerId>
-							<skipPublishing>${p2-deploy-only}</skipPublishing>
 							<excludeArtifacts>
 								<excludeArtifact>org.eclipse.emf.mwe.activities</excludeArtifact>      
 								<excludeArtifact>org.eclipse.emf.mwe.ui</excludeArtifact>              

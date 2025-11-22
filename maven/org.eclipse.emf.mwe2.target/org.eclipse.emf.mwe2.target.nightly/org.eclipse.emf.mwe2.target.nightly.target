@@ -27,7 +27,7 @@
 <location includeAllPlatforms="false" includeMode="planner" includeSource="true" type="InstallableUnit">
 <unit id="org.apache.log4j" version="1.2.26"/>
 <unit id="org.junit" version="0.0.0"/>
-<unit id="org.apache.commons.cli" version="1.10.0"/>
+<unit id="org.apache.commons.cli" version="1.11.0"/>
 <unit id="org.apache.commons.commons-logging" version="0.0.0"/>
 <unit id="com.google.guava" version="33.5.0.jre"/>
 <unit id="com.google.guava.failureaccess" version="1.0.3"/>

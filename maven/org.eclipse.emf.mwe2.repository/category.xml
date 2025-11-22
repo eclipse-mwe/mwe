@@ -10,8 +10,8 @@
    <bundle id="com.google.guava.source" version="33.5.0.qualifier"/>
    <bundle id="com.google.guava.failureaccess" version="1.0.3.qualifier"/>
    <bundle id="com.google.guava.failureaccess.source" version="1.0.3.qualifier"/>
-   <bundle id="org.apache.commons.cli" version="1.10.0"/>
-   <bundle id="org.apache.commons.cli.source" version="1.10.0"/>
+   <bundle id="org.apache.commons.cli" version="1.11.0"/>
+   <bundle id="org.apache.commons.cli.source" version="1.11.0"/>
    <bundle id="org.apache.commons.commons-logging" version="0.0.0"/>
    <bundle id="org.apache.commons.commons-logging.source" version="0.0.0"/>
    <category-def name="mwe2lang" label="MWE">

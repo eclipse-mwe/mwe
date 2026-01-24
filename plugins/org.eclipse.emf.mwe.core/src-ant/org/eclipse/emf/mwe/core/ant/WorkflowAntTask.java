@@ -59,9 +59,10 @@ public class WorkflowAntTask extends Java {
 		super.createArg().setValue(getFile());
 		for (Parameter param : params) {
 			if (param != null) {
-				final String paramString = "-p" + param.getName() + "=" + param.getValue();
+				final String paramString = param.getName() + "=" + param.getValue();
+				super.createArg().setValue("-p");
 				super.createArg().setValue(paramString);
-				log("Adding param: " + paramString);
+				log("Adding param: -p " + paramString);
 			}
 		}
 		log("Adding param: --ant");

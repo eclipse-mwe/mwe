@@ -16,7 +16,7 @@
   <setupTask
       xsi:type="setup:EclipseIniTask"
       option="-Doomph.redirection.emf.mwe"
-      value="=https://raw.githubusercontent.com/eclipse/mwe/master/releng/MWE.setup->${git.clone.emf.mwe.location|uri}/releng/MWE.setup"
+      value="=https://raw.githubusercontent.com/eclipse-mwe/mwe/master/releng/MWE.setup->${git.clone.emf.mwe.location|uri}/releng/MWE.setup"
       vm="true"/>
   <setupTask
       xsi:type="setup:ResourceCreationTask"
@@ -205,7 +205,7 @@
   <setupTask
       xsi:type="git:GitCloneTask"
       id="git.clone.emf.mwe"
-      remoteURI="eclipse/mwe"
+      remoteURI="eclipse-mwe/mwe"
       pushURI="">
     <annotation
         source="http://www.eclipse.org/oomph/setup/InducedChoices">
@@ -222,6 +222,12 @@
         <value>remoteURI</value>
       </detail>
     </annotation>
+    <configSections
+        name="branch">
+      <properties
+          key="autoSetupRebase"
+          value="always"/>
+    </configSections>
     <description>MWE Git Repository</description>
   </setupTask>
   <setupTask
@@ -243,6 +249,12 @@
   </setupTask>
   <setupTask
       xsi:type="setup.targlets:TargletTask">
+    <targlet
+        name="MWE">
+      <requirement
+          name="org.eclipse.sdk.feature.group"
+          optional="true"/>
+    </targlet>
     <description>MWE Target Platform</description>
     <composedTarget>org.eclipse.emf.mwe2.target</composedTarget>
   </setupTask>

@@ -34,8 +34,13 @@ pipeline {
     PROJECT_STORAGE_PATH = '/home/data/httpd/download.eclipse.org/modeling/emft/mwe'
     DOWNLOAD_AREA = "$PROJECT_STORAGE_PATH/downloads/drops"
     SCRIPTS = "$WORKSPACE/git-repo/releng/jenkins/scripts"
+    // Specify Temurin JDK explicitly in env variable and force toolchains:select-jdk-toolchain to use it,
+    // to prevent it from selecting the openjdk JDK listed in the default toolchains.xml.
+    JAVA_17_HOME = tool(type:'jdk', name:'temurin-jdk17-latest')
+    JAVA_21_HOME = tool(type:'jdk', name:'temurin-jdk21-latest')
   }
   tools {
+    jdk 'openjdk-jdk21-latest'
     maven 'apache-maven-3.9.12'
   }
 
@@ -78,13 +83,10 @@ pipeline {
     } // END stage
 
     stage ('Build') {
-      tools {
-        jdk 'temurin-jdk17-latest'
-      }
       steps {
         xvnc(useXauthority: true) {
           dir ('git-repo') {
-            buildProject("org.eclipse.emf.mwe2.target")
+            buildProject("org.eclipse.emf.mwe2.target", 'JAVA_17_HOME')
           }
         }
       } // END steps
@@ -96,14 +98,11 @@ pipeline {
     } // END stage
 
     stage ('Build Nightly') {
-      tools {
-        jdk 'temurin-jdk21-latest'
-      }
       steps {
         xvnc(useXauthority: true) {
           catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
             dir ('git-repo-nightly') {
-              buildProject("org.eclipse.emf.mwe2.target.nightly", true)
+              buildProject("org.eclipse.emf.mwe2.target.nightly", 'JAVA_21_HOME', true)
             }
           }
         }
@@ -263,8 +262,9 @@ EOF
 
 }
 
-def buildProject(targetPlatform, forceLocalDeployment = false) {
-  withEnv(["TARGET_PLATFORM=$targetPlatform", "FORCE_LOCAL_DEPLOYMENT=$forceLocalDeployment"]) {
+def buildProject(targetPlatform, enforcedJDK = '', forceLocalDeployment = false) {
+  withEnv(["TARGET_PLATFORM=$targetPlatform", "FORCE_LOCAL_DEPLOYMENT=$forceLocalDeployment",
+    "STRICT_JDK_PROFILE=${ enforcedJDK ? ('-Pstrict-jdk -Dtoolchain.jdk.env=' + enforcedJDK) : ''}"]) {
     sh '''
       GOALS='clean deploy'
       if [ "${TARGET_PLATFORM}" == "org.eclipse.emf.mwe2.target.nightly" ]; then
@@ -283,6 +283,7 @@ def buildProject(targetPlatform, forceLocalDeployment = false) {
 
       mvn \
         -f maven/org.eclipse.emf.mwe2.parent/pom.xml \
+        ${STRICT_JDK_PROFILE} \
         -Dsign.skip=false \
         -Dtarget-platform=${TARGET_PLATFORM} \
         -DBUILD_TYPE=$BUILD_TYPE \

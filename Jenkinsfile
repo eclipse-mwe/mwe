@@ -1,6 +1,6 @@
 pipeline {
   agent {
-    label "ubuntu-2404"
+    label 'ubuntu-2404'
   }
 
   parameters {
@@ -27,6 +27,7 @@ pipeline {
     disableConcurrentBuilds()
     timeout(time: 60, unit: 'MINUTES')
     timestamps()
+    skipDefaultCheckout()
   }
 
   environment {
@@ -36,6 +37,9 @@ pipeline {
     SCRIPTS = "$WORKSPACE/git-repo/releng/jenkins/scripts"
     RELEASE_TYPE="$params.RELEASE_TYPE"
     FORCE_PUBLISH="$params.FORCE_PUBLISH"
+  }
+  tools {
+    maven 'apache-maven-3.9.12'
   }
 
   stages {
@@ -74,12 +78,13 @@ pipeline {
     } // END stage
 
     stage ('Build') {
+      tools {
+        jdk 'temurin-jdk17-latest'
+      }
       steps {
         xvnc(useXauthority: true) {
-          withMaven(jdk: 'temurin-jdk17-latest', maven: 'apache-maven-3.9.9', options: [junitPublisher(disabled: true)]) {
-            dir ('git-repo') {
-              buildProject("org.eclipse.emf.mwe2.target")
-            }
+          dir ('git-repo') {
+            buildProject("org.eclipse.emf.mwe2.target")
           }
         }
       } // END steps
@@ -91,13 +96,14 @@ pipeline {
     } // END stage
 
     stage ('Build Nightly') {
+      tools {
+        jdk 'temurin-jdk21-latest'
+      }
       steps {
         xvnc(useXauthority: true) {
           catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
-            withMaven(jdk: 'temurin-jdk21-latest', maven: 'apache-maven-3.9.9', options: [junitPublisher(disabled: true)]) {
-              dir ('git-repo-nightly') {
-                buildProject("org.eclipse.emf.mwe2.target.nightly", true, "4.0.11")
-              }
+            dir ('git-repo-nightly') {
+              buildProject("org.eclipse.emf.mwe2.target.nightly", true)
             }
           }
         }
@@ -257,8 +263,8 @@ EOF
 
 }
 
-def buildProject(targetPlatform, forceLocalDeployment = false, tychoVersion = "4.0.10") {
-  withEnv(["TARGET_PLATFORM=$targetPlatform", "FORCE_LOCAL_DEPLOYMENT=$forceLocalDeployment", "TYCHO_VERSION=$tychoVersion"]) {
+def buildProject(targetPlatform, forceLocalDeployment = false) {
+  withEnv(["TARGET_PLATFORM=$targetPlatform", "FORCE_LOCAL_DEPLOYMENT=$forceLocalDeployment"]) {
     sh '''
       GOALS='clean deploy'
       if [ "${TARGET_PLATFORM}" == "org.eclipse.emf.mwe2.target.nightly" ]; then
@@ -276,12 +282,8 @@ def buildProject(targetPlatform, forceLocalDeployment = false, tychoVersion = "4
       esac
 
       mvn \
-        -e -f maven/org.eclipse.emf.mwe2.parent/pom.xml \
-        -Dtycho-version=${TYCHO_VERSION} \
+        -f maven/org.eclipse.emf.mwe2.parent/pom.xml \
         -Dsign.skip=false \
-        -DtestFailureIgnore=true \
-        -Dmaven.javadoc.failOnError=false \
-        -Dtycho.localArtifacts=ignore \
         -Dtarget-platform=${TARGET_PLATFORM} \
         -DBUILD_TYPE=$BUILD_TYPE \
         $GOALS

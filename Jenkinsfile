@@ -19,11 +19,7 @@ pipeline {
   }
 
   triggers {
-    // Nightly build only for master of the upstream repository, not for private copies
-    // of it (e.g. one used for security fixes). This runs before checkout, so the URL
-    // comes from the job's SCM configuration (same pattern as IS_UPSTREAM in Prepare).
-    // The repo check comes first so that every build evaluates it, not only master builds.
-    cron((scm.userRemoteConfigs[0]?.url ==~ /(https:\/\/|git@)github\.com[\/:]eclipse-mwe\/mwe(\.git)?\/?/) && env.BRANCH_NAME == 'master' ? 'H H(0-1) * * *' : '')
+    cron(env.BRANCH_NAME == 'cd_tycho50' ? '''H H(20-21) * * *''' : '')
   }
 
   options {

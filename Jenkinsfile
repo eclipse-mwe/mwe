@@ -19,7 +19,7 @@ pipeline {
   }
 
   triggers {
-    cron(env.BRANCH_NAME == 'master' ? 'H H(0-1) * * *' : '')
+    cron(env.BRANCH_NAME == 'cd_tycho50' ? '''H H(20-21) * * *''' : '')
   }
 
   options {

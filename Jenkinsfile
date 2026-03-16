@@ -36,8 +36,8 @@ pipeline {
     SCRIPTS = "$WORKSPACE/git-repo/releng/jenkins/scripts"
     // Specify Temurin JDK explicitly in env variable and force toolchains:select-jdk-toolchain to use it,
     // to prevent it from selecting the openjdk JDK listed in the default toolchains.xml.
-    JAVA_17_HOME = tool(type:'jdk', name:'temurin-jdk17-latest')
     JAVA_21_HOME = tool(type:'jdk', name:'temurin-jdk21-latest')
+    JAVA_25_HOME = tool(type:'jdk', name:'temurin-jdk25-latest')
   }
   tools {
     jdk 'openjdk-jdk21-latest'
@@ -86,7 +86,7 @@ pipeline {
       steps {
         xvnc(useXauthority: true) {
           dir ('git-repo') {
-            buildProject("org.eclipse.emf.mwe2.target", 'JAVA_17_HOME')
+            buildProject("org.eclipse.emf.mwe2.target", 'JAVA_21_HOME')
           }
         }
       } // END steps
@@ -102,7 +102,7 @@ pipeline {
         xvnc(useXauthority: true) {
           catchError(buildResult: 'UNSTABLE', stageResult: 'UNSTABLE') {
             dir ('git-repo-nightly') {
-              buildProject("org.eclipse.emf.mwe2.target.nightly", 'JAVA_21_HOME', true)
+              buildProject("org.eclipse.emf.mwe2.target.nightly", 'JAVA_25_HOME', true)
             }
           }
         }

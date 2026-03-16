@@ -8,9 +8,9 @@
 
 	<properties>
 		<tycho-qualifier>yyyyMMdd-HHmm</tycho-qualifier>
-		
+
 		<tycho-version>5.0.2</tycho-version>
-		<maven.compiler.release>17</maven.compiler.release>
+		<maven.compiler.release>21</maven.compiler.release>
 		<maven-install-version>2.5.2</maven-install-version>
 		<maven-deploy-version>2.8.2</maven-deploy-version>
 		<maven-javadoc-version>3.4.1</maven-javadoc-version>
@@ -48,7 +48,7 @@
 			<url>http://www.eclipse.org/legal/epl-2.0</url>
 		</license>
 	</licenses>
-	
+
 	<pluginRepositories>
 		<!-- for eclipse-jarsigner-plugin -->
 		<pluginRepository>
@@ -63,8 +63,8 @@
 		</pluginRepository>
 	</pluginRepositories>
 
-	
-	
+
+
 	<build>
 		<sourceDirectory>src</sourceDirectory>
 		<plugins>
@@ -268,7 +268,7 @@
 				<module>../org.eclipse.emf.mwe2.target/org.eclipse.emf.mwe2.target.nightly</module>
 			</modules>
 		</profile>
-		<!-- 
+		<!--
 			Profile 'release' is activated when property BUILD_TYPE is NOT 'N' (nightly).
 			For release builds strict version checking is disabled, since Maven version will be a
 			release version, while OSGi artifacts (MANIFEST.MF, feature.xml) still contain a qualified version.
@@ -307,25 +307,25 @@
 						<configuration>
 							<publishingServerId>central</publishingServerId>
 							<excludeArtifacts>
-								<excludeArtifact>org.eclipse.emf.mwe.activities</excludeArtifact>      
-								<excludeArtifact>org.eclipse.emf.mwe.ui</excludeArtifact>              
-								<excludeArtifact>org.eclipse.emf.mwe.ui.simpleEditor</excludeArtifact> 
-								<excludeArtifact>org.eclipse.emf.mwe.doc</excludeArtifact>             
-								<excludeArtifact>org.eclipse.emf.mwe.sdk</excludeArtifact>             
-								<excludeArtifact>org.eclipse.emf.mwe2.language.ide</excludeArtifact>   
-								<excludeArtifact>org.eclipse.emf.mwe2.language.ui</excludeArtifact>    
-								<excludeArtifact>org.eclipse.emf.mwe2.launch.ui</excludeArtifact>      
+								<excludeArtifact>org.eclipse.emf.mwe.activities</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe.ui</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe.ui.simpleEditor</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe.doc</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe.sdk</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe2.language.ide</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe2.language.ui</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe2.launch.ui</excludeArtifact>
 								<excludeArtifact>org.eclipse.emf.mwe2.features-parent</excludeArtifact>
-								<excludeArtifact>org.eclipse.emf.mwe.core.feature</excludeArtifact>    
-								<excludeArtifact>org.eclipse.emf.mwe.doc.feature</excludeArtifact>     
-								<excludeArtifact>org.eclipse.emf.mwe.ui.feature</excludeArtifact>      
-								<excludeArtifact>org.eclipse.emf.mwe2.runtime.sdk</excludeArtifact>    
-								<excludeArtifact>org.eclipse.emf.mwe2.launcher</excludeArtifact>       
-								<excludeArtifact>org.eclipse.emf.mwe2.language.sdk</excludeArtifact>   
-								<excludeArtifact>tests-parent</excludeArtifact>                        
-								<excludeArtifact>org.eclipse.emf.mwe.tests</excludeArtifact>           
-								<excludeArtifact>org.eclipse.emf.mwe2.language.tests</excludeArtifact> 
-								<excludeArtifact>org.eclipse.emf.mwe2.repository</excludeArtifact>     
+								<excludeArtifact>org.eclipse.emf.mwe.core.feature</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe.doc.feature</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe.ui.feature</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe2.runtime.sdk</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe2.launcher</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe2.language.sdk</excludeArtifact>
+								<excludeArtifact>tests-parent</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe.tests</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe2.language.tests</excludeArtifact>
+								<excludeArtifact>org.eclipse.emf.mwe2.repository</excludeArtifact>
 								<excludeArtifact>org.eclipse.emf.mwe2.target</excludeArtifact>
 								<excludeArtifact>org.eclipse.emf.mwe2.target.nightly</excludeArtifact>
 							</excludeArtifacts>

@@ -73,6 +73,7 @@ public class EcoreGenerator implements IWorkflowComponent {
 	private String genModel;
 	
 	private ResourceSet resourceSet;
+	protected Generator generator;
 
 	/**
 	 * @since 2.12
@@ -126,7 +127,7 @@ public class EcoreGenerator implements IWorkflowComponent {
 		genModel.reconcile();
 		createGenModelSetup().registerGenModel(genModel);
 
-		Generator generator = new Generator() {
+		generator = new Generator() {
 			@Override
 			public JControlModel getJControlModel() {
 				return new JControlModel(){
@@ -138,8 +139,8 @@ public class EcoreGenerator implements IWorkflowComponent {
 			}
 		};
 		log.info("generating EMF code for "+this.genModel);
-		generator.getAdapterFactoryDescriptorRegistry().addDescriptor(GenModelPackage.eNS_URI,
-				new GeneratorAdapterDescriptor(getTypeMapper(), getLineDelimiter()));
+		addAdapters();
+
 		generator.setInput(genModel);
 
 		if (generateModel) {
@@ -163,6 +164,11 @@ public class EcoreGenerator implements IWorkflowComponent {
 			if (editorDiag.getSeverity() != Diagnostic.OK)
 				log.info(editorDiag);
 		}
+	}
+
+	protected void addAdapters() {
+		generator.getAdapterFactoryDescriptorRegistry().addDescriptor(GenModelPackage.eNS_URI,
+				new GeneratorAdapterDescriptor(getTypeMapper(), getLineDelimiter()));
 	}
 
 	private ResourceSet getResourceSet() {

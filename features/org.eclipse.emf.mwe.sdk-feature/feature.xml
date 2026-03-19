@@ -38,16 +38,6 @@ SPDX-License-Identifier: EPL-2.0
          version="0.0.0"/>
 
    <includes
-         id="org.eclipse.emf.mwe.core.feature.source"
-         version="0.0.0"
-         optional="true"/>
-
-   <includes
-         id="org.eclipse.emf.mwe.ui.feature.source"
-         version="0.0.0"
-         optional="true"/>
-
-   <includes
          id="org.eclipse.emf.mwe.doc.feature"
          version="0.0.0"/>
 

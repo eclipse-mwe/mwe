@@ -37,10 +37,6 @@ SPDX-License-Identifier: EPL-2.0
          id="org.eclipse.emf.mwe2.launcher"
          version="0.0.0"/>
 
-   <includes
-         id="org.eclipse.emf.mwe2.launcher.source"
-         version="0.0.0"/>
-
    <requires>
       <import feature="org.eclipse.xtext.ui" version="2.34.0" match="compatible"/>
    </requires>

@@ -29,6 +29,7 @@
 				<configuration>
 					<repositoryName>MWE Repository</repositoryName>
 					<finalName>${final.repo.name}</finalName>
+					<includeAllSources>true</includeAllSources>
 				</configuration>
 			</plugin>
 			<plugin>

@@ -9,24 +9,4 @@
 	<version>1.20.0-SNAPSHOT</version>
 	<packaging>eclipse-feature</packaging>
 	<artifactId>org.eclipse.emf.mwe.sdk</artifactId>
-	<build>
-		<plugins>
-			<plugin>
-				<groupId>org.eclipse.tycho</groupId>
-				<artifactId>tycho-source-plugin</artifactId>
-				<version>${tycho-version}</version>
-				<executions>
-					<execution>
-						<id>feature-source</id>
-						<goals>
-							<goal>feature-source</goal>
-						</goals>
-						<configuration>
-							<skip>true</skip>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-		</plugins>
-	</build>
 </project>

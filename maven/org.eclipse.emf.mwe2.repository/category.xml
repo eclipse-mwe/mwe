@@ -6,10 +6,10 @@
    <feature id="org.eclipse.emf.mwe.sdk" version="0.0.0">
       <category name="mwe2lang"/>
    </feature>
-   <bundle id="com.google.guava" version="33.5.0.qualifier"/>
-   <bundle id="com.google.guava.failureaccess" version="1.0.3.qualifier"/>
-   <bundle id="org.apache.commons.cli" version="1.11.0"/>
-   <bundle id="org.apache.commons.commons-logging" version="0.0.0"/>
+   <bundle id="com.google.guava"/>
+   <bundle id="com.google.guava.failureaccess"/>
+   <bundle id="org.apache.commons.cli"/>
+   <bundle id="org.apache.commons.commons-logging"/>
    <category-def name="mwe2lang" label="MWE">
       <description>
          The configuration language used to configure Xtext&apos;s code generator.

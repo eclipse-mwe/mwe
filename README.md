@@ -13,7 +13,7 @@ The master branch is configured to perform a nightly integration build. If a nig
 
 Performing a stable release has a few manual steps that are documented here:
 
-1. Start the master branch job, selecting the release type. When the job is finished, artifacts should have been uploaded to the [Sonatype Nexus](https://oss.sonatype.org) and the Eclipse download storage.
+1. Start the master branch job, selecting the release type. When the job is finished, artifacts should have been uploaded to [Maven Central](https://central.sonatype.com/) and the Eclipse download storage.
 
 1. Add a git tag (`v$MAJOR.$MINOR.$SERVICE`) to mark the commit being released.
 
@@ -25,7 +25,7 @@ Performing a stable release has a few manual steps that are documented here:
 
 1. Check if the [MWE update site](https://download.eclipse.org/modeling/emft/mwe/updates/milestones/) now provides the correct artifacts.
 
-1. Check if Sonatype Nexus provides the correct artifacts. If so, close the staging repository and release it afterwards.
+1. Check if the Sonatype Publishing provides the correct artifacts. If so, publish it afterwards.
 
 1. Create a SimRel contribution by replacing the update site in [emft-mwe.aggrcon](https://git.eclipse.org/c/simrel/org.eclipse.simrel.build.git/tree/emft-mwe.aggrcon) with the newly released version.
 

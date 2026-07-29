@@ -41,7 +41,7 @@ pipeline {
   }
   tools {
     jdk 'openjdk-jdk21-latest'
-    maven 'apache-maven-3.9.12'
+    maven 'apache-maven-latest'
   }
 
   stages {

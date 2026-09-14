@@ -19,9 +19,18 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Set;
 
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.AbstractPackage;
+import org.eclipse.emf.mwe.internal.core.debug.communication.packages.BreakpointPackage;
+import org.eclipse.emf.mwe.internal.core.debug.communication.packages.CommandPackage;
+import org.eclipse.emf.mwe.internal.core.debug.communication.packages.ConfirmationPackage;
+import org.eclipse.emf.mwe.internal.core.debug.communication.packages.EventPackage;
+import org.eclipse.emf.mwe.internal.core.debug.communication.packages.EventPackageWithFrames;
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.HandshakePackage;
+import org.eclipse.emf.mwe.internal.core.debug.communication.packages.RegisterPackage;
+import org.eclipse.emf.mwe.internal.core.debug.communication.packages.RequireVarPackage;
+import org.eclipse.emf.mwe.internal.core.debug.communication.packages.VarDataPackage;
 
 /**
  * This class implements a socket connection model. "Packages" (units of information) can be transfered between two
@@ -41,6 +50,21 @@ public class Connection {
 	private PackageSender sender;
 
 	private PackageReceiver receiver;
+
+	/**
+	 * The packet types supported by the internal debugger protocol. Keep this check before Class.forName: loading a
+	 * class initializes it by default.
+	 */
+	private static final Set<String> ALLOWED_PACKET_CLASSES = Set.of(
+			BreakpointPackage.class.getName(),
+			CommandPackage.class.getName(),
+			ConfirmationPackage.class.getName(),
+			EventPackage.class.getName(),
+			EventPackageWithFrames.class.getName(),
+			HandshakePackage.class.getName(),
+			RegisterPackage.class.getName(),
+			RequireVarPackage.class.getName(),
+			VarDataPackage.class.getName());
 
 	// -------------------------------------------------------------------------
 	// *the* main operation methods
@@ -161,6 +185,9 @@ public class Connection {
 		Class<? extends AbstractPackage> packetClass = null;
 		AbstractPackage packet = null;
 		String msg = null;
+		if (!ALLOWED_PACKET_CLASSES.contains(className)) {
+			throw new IOException("Unsupported debugger packet class: " + className);
+		}
 		try {
 			packetClass = (Class<? extends AbstractPackage>) Class.forName(className);
 		} catch (ClassNotFoundException e) {

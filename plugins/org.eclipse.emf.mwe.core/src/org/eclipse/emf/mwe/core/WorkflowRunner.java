@@ -196,7 +196,7 @@ public class WorkflowRunner {
 		final Options options = new Options();
 
 		options.addOption(Option.builder(MONITOR)
-				.hasArg()
+				.hasArgs()
 				.argName("className,moreArgs")
 				.desc(
 						"the name of a class that implements ProgressMonitor. More arguments can be appended that will be injected to the monitor,"

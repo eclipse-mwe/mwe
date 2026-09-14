@@ -66,13 +66,15 @@ public class WorkflowElementAdapter implements ElementAdapter {
 	public boolean canHandle(Object element) {
 		if (element instanceof WorkflowComponent) {
 			if (root == null) {
-				root = ((WorkflowComponent) element).getContainer();
+				final CompositeComponent container = ((WorkflowComponent) element).getContainer();
+				root = container != null ? container
+						: element instanceof CompositeComponent ? (CompositeComponent) element : null;
 			}
 			return true;
 		}
 		if (element instanceof SyntaxElement) {
 			SyntaxElement se = (SyntaxElement) element;
-			return se.resource.endsWith(".oaw");
+			return se.resource != null && (se.resource.endsWith(".mwe") || se.resource.endsWith(".oaw"));
 		}
 		return false;
 	}
@@ -196,9 +198,9 @@ public class WorkflowElementAdapter implements ElementAdapter {
 		if (loc == null) {
 			loc = parent.getLocation();
 		}
-		if (resource.endsWith(loc.getResource())) {
+		if (loc != null && resourceMatches(resource, loc.getResource())) {
 			for (WorkflowComponent comp : parent.getComponents())
-				if (comp.getLocation().getLineNumber() == lineNo)
+				if (comp.getLocation() != null && comp.getLocation().getLineNumber() == lineNo)
 					return comp;
 		}
 		for (WorkflowComponent comp : parent.getComponents())
@@ -209,6 +211,14 @@ public class WorkflowElementAdapter implements ElementAdapter {
 					return found;
 			}
 		return null;
+	}
+
+	private boolean resourceMatches(String requestedResource, String runtimeResource) {
+		if (requestedResource == null || runtimeResource == null) {
+			return false;
+		}
+		return requestedResource.equals(runtimeResource) || requestedResource.endsWith(runtimeResource)
+				|| runtimeResource.endsWith(requestedResource);
 	}
 
 	private Location initialize(Location loc) {

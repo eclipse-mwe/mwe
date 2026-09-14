@@ -155,7 +155,10 @@ public class DebugModelManager implements IDebugEventSetListener {
 			if (event.getKind() == DebugEvent.TERMINATE) {
 				DebugPlugin.getDefault().removeDebugEventListener(this);
 				DebugPlugin.getDefault().getBreakpointManager().removeBreakpointListener(target);
-				getThread().clearStack(0);
+				final DebugThread thread = getThread();
+				if (thread != null) {
+					thread.clearStack(0);
+				}
 				target.removeThread();
 				fireTerminateEvent();
 			}

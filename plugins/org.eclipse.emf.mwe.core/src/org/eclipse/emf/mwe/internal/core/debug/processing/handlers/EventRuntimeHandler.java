@@ -193,7 +193,9 @@ public class EventRuntimeHandler implements RuntimeHandler, EventHandler {
 
 	private void sendAndConfirm(final EventPackage event) throws IOException {
 		int refId = connection.sendPackage(event);
-		connection.listenForPackage(ConfirmationPackage.class, refId);
+		final ConfirmationPackage confirmation = (ConfirmationPackage) connection.listenForPackage(ConfirmationPackage.class,
+				refId);
+		connection.awaitBreakpointPackagesProcessed(confirmation);
 	}
 
 	// -------------------------------------------------------------------------

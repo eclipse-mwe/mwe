@@ -77,15 +77,17 @@ public class BreakpointRuntimeHandler implements RuntimeHandler, ProcessHandler,
 	public void run() {
 		try {
 			while (true) {
-				listenAndDispatchCommand();
+				final BreakpointPackage packet = (BreakpointPackage) connection.listenForPackage(BreakpointPackage.class);
+				try {
+					handle(packet);
+				}
+				finally {
+					connection.markPackageProcessed(packet);
+				}
 			}
 		}
 		catch (IOException e) {
 		}
-	}
-
-	private void listenAndDispatchCommand() throws IOException {
-		handle((BreakpointPackage) connection.listenForPackage(BreakpointPackage.class));
 	}
 
 	private void handle(final BreakpointPackage packet) {

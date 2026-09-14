@@ -157,11 +157,20 @@ public class MWEDebuggerLauncher extends AbstractVMRunner {
 
 		// programArgs
 		String[] progArgs = config.getProgramArguments();
+		boolean monitorClassArgument = false;
 		for (String element : progArgs) {
 			arguments.add(element);
+			if (monitorClassArgument) {
+				arguments.add("port=" + commPort);
+				monitorClassArgument = false;
+			} else if ("-m".equals(element) || "--monitorClass".equals(element)) {
+				monitorClassArgument = true;
+			}
 		}
 
-		arguments.add("port=" + commPort);
+		if (monitorClassArgument) {
+			arguments.add("port=" + commPort);
+		}
 
 		String[] cmdLine = new String[arguments.size()];
 		arguments.toArray(cmdLine);

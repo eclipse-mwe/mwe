@@ -16,6 +16,8 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Proxy;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -36,6 +38,8 @@ import org.eclipse.emf.mwe.internal.core.debug.communication.packages.VarDataPac
  * established. This class can be used both on the sender and receiver side.
  */
 public class Connection {
+
+	private static final InetAddress LOOPBACK_ADDRESS = InetAddress.getLoopbackAddress();
 
 	private ServerSocket ssocket;
 
@@ -60,6 +64,18 @@ public class Connection {
 		return receiver.getPackage(type, refId, -1);
 	}
 
+	public void markPackageProcessed(final AbstractPackage packet) {
+		if (receiver != null) {
+			receiver.markPackageProcessed(packet);
+		}
+	}
+
+	public void awaitBreakpointPackagesProcessed(final AbstractPackage packet) throws InterruptedIOException {
+		if (receiver != null) {
+			receiver.awaitBreakpointPackagesProcessed(packet);
+		}
+	}
+
 	public int sendPackage(final AbstractPackage packet) throws IOException {
 		if (sender == null) {
 			return -1;
@@ -77,7 +93,7 @@ public class Connection {
 	 * @throws IOException
 	 */
 	public void startListeningSocket(final int port) throws IOException {
-		ssocket = new ServerSocket(port, 50, InetAddress.getLoopbackAddress());
+		ssocket = new ServerSocket(port, 50, LOOPBACK_ADDRESS);
 	}
 
 	/**
@@ -105,7 +121,9 @@ public class Connection {
 	 * @throws IOException
 	 */
 	public void connect(final int port) throws IOException {
-		socket = new Socket("localhost", port);
+		socket = new Socket(Proxy.NO_PROXY);
+		final InetSocketAddress endpoint = new InetSocketAddress(LOOPBACK_ADDRESS, port);
+		socket.connect(endpoint);
 		establishReaderAndWriter();
 		replyHandshake();
 	}
@@ -197,6 +215,7 @@ public class Connection {
 	protected void writePackage(final AbstractPackage packet) throws IOException {
 		out.writeUTF(packet.getClass().getName());
 		packet.writeContent(out);
+		out.flush();
 		// System.out.println(Thread.currentThread().getName() + "-SENT-----: " + packet);
 	}
 

@@ -14,10 +14,16 @@ package org.eclipse.emf.mwe.internal.core.debug.communication;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.AbstractPackage;
+import org.eclipse.emf.mwe.internal.core.debug.communication.packages.BreakpointPackage;
+import org.eclipse.emf.mwe.internal.core.debug.communication.packages.ConfirmationPackage;
 
 /**
  * This Runnable listens for incoming packages asynchroniously and keeps them, until they are required by
@@ -25,6 +31,12 @@ import org.eclipse.emf.mwe.internal.core.debug.communication.packages.AbstractPa
  */
 public class PackageReceiver implements Runnable {
 	private final ArrayList<AbstractPackage> receivedPackages;
+
+	private final Map<AbstractPackage, Long> packetSequences;
+
+	private final Set<Long> pendingBreakpointSequences;
+
+	private long nextPacketSequence;
 	
 	private static final Log logger = LogFactory.getLog(PackageReceiver.class);
 
@@ -51,6 +63,8 @@ public class PackageReceiver implements Runnable {
 	private PackageReceiver(final Connection connection) {
 		this.connection = connection;
 		receivedPackages = new ArrayList<AbstractPackage>();
+		packetSequences = new IdentityHashMap<AbstractPackage, Long>();
+		pendingBreakpointSequences = new HashSet<Long>();
 	}
 
 	/**
@@ -102,6 +116,55 @@ public class PackageReceiver implements Runnable {
 		return packet;
 	}
 
+	/**
+	 * Marks a package as fully handled by the consumer that retrieved it. This is used to preserve the ordering
+	 * between breakpoint commands and the startup confirmation without changing the wire protocol.
+	 */
+	public void markPackageProcessed(final AbstractPackage packet) {
+			synchronized (receivedPackages) {
+			final Long sequence = packetSequences.get(packet);
+			if (sequence != null && packet instanceof BreakpointPackage) {
+				pendingBreakpointSequences.remove(sequence);
+				packetSequences.remove(packet);
+				receivedPackages.notifyAll();
+			}
+		}
+	}
+
+	/**
+	 * Waits until every breakpoint packet received before the supplied packet has been processed.
+	 */
+	public void awaitBreakpointPackagesProcessed(final AbstractPackage packet) throws InterruptedIOException {
+		synchronized (receivedPackages) {
+			final Long boundary = packetSequences.get(packet);
+			if (boundary == null) {
+				return;
+			}
+			while (hasPendingBreakpointBefore(boundary) && connection.isConnected() && !interrupt) {
+				try {
+					receivedPackages.wait();
+				}
+				catch (final InterruptedException e) {
+					Thread.currentThread().interrupt();
+					throw new InterruptedIOException("Interrupted while waiting for breakpoint processing");
+				}
+			}
+			if (hasPendingBreakpointBefore(boundary)) {
+				throw new InterruptedIOException("Connection closed while waiting for breakpoint processing");
+			}
+			packetSequences.remove(packet);
+		}
+	}
+
+	private boolean hasPendingBreakpointBefore(final long boundary) {
+		for (final Long sequence : pendingBreakpointSequences) {
+			if (sequence.longValue() < boundary) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private void close() {
 		interrupt = true;
 		synchronized (receivedPackages) {
@@ -128,6 +191,9 @@ public class PackageReceiver implements Runnable {
 				continue;
 			}
 			receivedPackages.remove(packet);
+			if (!(packet instanceof BreakpointPackage) && !(packet instanceof ConfirmationPackage)) {
+				packetSequences.remove(packet);
+			}
 			return packet;
 		}
 		return null;
@@ -173,6 +239,11 @@ public class PackageReceiver implements Runnable {
 
 	private void addPackageToList(final AbstractPackage packet) {
 		synchronized (receivedPackages) {
+			final long sequence = ++nextPacketSequence;
+			packetSequences.put(packet, Long.valueOf(sequence));
+			if (packet instanceof BreakpointPackage) {
+				pendingBreakpointSequences.add(Long.valueOf(sequence));
+			}
 			receivedPackages.add(packet);
 			receivedPackages.notifyAll();
 		}

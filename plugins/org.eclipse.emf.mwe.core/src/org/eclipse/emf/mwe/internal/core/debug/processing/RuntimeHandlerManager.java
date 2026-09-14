@@ -13,6 +13,8 @@ package org.eclipse.emf.mwe.internal.core.debug.processing;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,11 +31,17 @@ import org.eclipse.emf.mwe.internal.core.debug.communication.packages.RegisterPa
  */
 public class RuntimeHandlerManager implements Runnable {
 
+	private static final long REGISTRATION_TIMEOUT_MILLIS = 20_000L;
+
 	private Connection connection;
 
 	private final DebugMonitor monitor;
 
 	private static final Log logger = LogFactory.getLog(RuntimeHandlerManager.class);
+
+	private final CountDownLatch registrationComplete = new CountDownLatch(1);
+
+	private volatile Exception registrationFailure;
 
 	// -------------------------------------------------------------------------
 
@@ -56,6 +64,29 @@ public class RuntimeHandlerManager implements Runnable {
 		thread.start();
 	}
 
+	/**
+	 * Wait until the debugger has registered all runtime handlers and adapters.
+	 * The adapter registration packet is sent last by the Eclipse debugger and
+	 * therefore acts as the initialization barrier for the existing protocol.
+	 *
+	 * @throws IOException
+	 *             if registration fails or does not complete in time
+	 */
+	public void awaitRegistration() throws IOException {
+		try {
+			if (!registrationComplete.await(REGISTRATION_TIMEOUT_MILLIS, TimeUnit.MILLISECONDS)) {
+				throw new IOException("Timed out waiting for debugger handler registration");
+			}
+		}
+		catch (final InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IOException("Interrupted while waiting for debugger handler registration", e);
+		}
+		if (registrationFailure != null) {
+			throw new IOException("Debugger handler registration failed", registrationFailure);
+		}
+	}
+
 	// -------------------------------------------------------------------------
 
 	/*
@@ -71,6 +102,8 @@ public class RuntimeHandlerManager implements Runnable {
 			}
 		}
 		catch (Exception e) {
+			registrationFailure = e;
+			registrationComplete.countDown();
 			if (!(e instanceof IOException)) {
 				logger.error(e.getMessage(), e);
 			}
@@ -110,6 +143,7 @@ public class RuntimeHandlerManager implements Runnable {
 				adapter = (ElementAdapter) clazz.getDeclaredConstructor().newInstance();
 				monitor.addAdapter(adapter);
 			}
+			registrationComplete.countDown();
 		}
 	}
 

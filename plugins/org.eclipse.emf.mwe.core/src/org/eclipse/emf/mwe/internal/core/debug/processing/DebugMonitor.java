@@ -90,6 +90,7 @@ public class DebugMonitor implements ProgressMonitor {
 			final RuntimeHandlerManager handler = new RuntimeHandlerManager(this);
 			handler.setConnection(connection);
 			handler.startListener();
+			handler.awaitRegistration();
 		}
 		catch (final Exception e) {
 			connection.close();
@@ -159,6 +160,10 @@ public class DebugMonitor implements ProgressMonitor {
 	 */
 	@Override
 	public void started(final Object element, final Object context) {
+		final ElementAdapter adapter = getAdapter(element);
+		if (adapter != null) {
+			adapter.setContext(context);
+		}
 		fireEvent(STARTED);
 	}
 

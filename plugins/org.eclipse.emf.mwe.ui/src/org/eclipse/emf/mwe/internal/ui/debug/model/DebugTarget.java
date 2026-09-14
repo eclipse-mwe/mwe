@@ -102,7 +102,8 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 
 	@Override
 	public IThread[] getThreads() {
-		return new IThread[] { fThread };
+		final DebugThread thread = fThread;
+		return thread == null ? new IThread[0] : new IThread[] { thread };
 	}
 
 	public DebugThread getThread() {

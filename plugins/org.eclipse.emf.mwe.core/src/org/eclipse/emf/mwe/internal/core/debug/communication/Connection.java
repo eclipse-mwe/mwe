@@ -15,11 +15,9 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Set;
 
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.AbstractPackage;
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.BreakpointPackage;
@@ -51,21 +49,6 @@ public class Connection {
 
 	private PackageReceiver receiver;
 
-	/**
-	 * The packet types supported by the internal debugger protocol. Keep this check before Class.forName: loading a
-	 * class initializes it by default.
-	 */
-	private static final Set<String> ALLOWED_PACKET_CLASSES = Set.of(
-			BreakpointPackage.class.getName(),
-			CommandPackage.class.getName(),
-			ConfirmationPackage.class.getName(),
-			EventPackage.class.getName(),
-			EventPackageWithFrames.class.getName(),
-			HandshakePackage.class.getName(),
-			RegisterPackage.class.getName(),
-			RequireVarPackage.class.getName(),
-			VarDataPackage.class.getName());
-
 	// -------------------------------------------------------------------------
 	// *the* main operation methods
 
@@ -94,7 +77,7 @@ public class Connection {
 	 * @throws IOException
 	 */
 	public void startListeningSocket(final int port) throws IOException {
-		ssocket = new ServerSocket(port);
+		ssocket = new ServerSocket(port, 50, InetAddress.getLoopbackAddress());
 	}
 
 	/**
@@ -180,47 +163,35 @@ public class Connection {
 	}
 
 	
-	@SuppressWarnings("unchecked")
 	private AbstractPackage instantiatePackage(final String className) throws IOException {
-		Class<? extends AbstractPackage> packetClass = null;
-		AbstractPackage packet = null;
-		String msg = null;
-		if (!ALLOWED_PACKET_CLASSES.contains(className)) {
-			throw new IOException("Unsupported debugger packet class: " + className);
+		if (BreakpointPackage.class.getName().equals(className)) {
+			return new BreakpointPackage(0, null);
 		}
-		try {
-			packetClass = (Class<? extends AbstractPackage>) Class.forName(className);
-		} catch (ClassNotFoundException e) {
-			msg = "Couldn't find " + className + " in the classpath.";
+		if (CommandPackage.class.getName().equals(className)) {
+			return new CommandPackage(0);
 		}
-
-		if (msg == null && packetClass != null) {
-			Constructor<?> c = packetClass.getConstructors()[0];
-			Class<?>[] parmTypes = c.getParameterTypes();
-			Object[] initargs = new Object[parmTypes.length];
-			for (int i = 0; i < parmTypes.length; i++) {
-				if (parmTypes[i] == int.class) {
-					initargs[i] = 0;
-				}
-			}
-			try {
-				packet = (AbstractPackage) c.newInstance(initargs);
-			} catch (IllegalArgumentException e) {
-				msg = "Couldn't instantiate " + c + " : " + e;
-			} catch (InstantiationException e) {
-				msg = "Couldn't instantiate " + c + " : " + e;
-			} catch (IllegalAccessException e) {
-				msg = "Couldn't instantiate " + c + " : " + e;
-			} catch (InvocationTargetException e) {
-				msg = "Problem during instantiation of " + c + " : " + e.getTargetException();
-			}
+		if (ConfirmationPackage.class.getName().equals(className)) {
+			return new ConfirmationPackage(0);
 		}
-
-		if (msg != null) {
-			System.err.println(msg);
-			throw new IOException(msg);
+		if (EventPackage.class.getName().equals(className)) {
+			return new EventPackage(0);
 		}
-		return packet;
+		if (EventPackageWithFrames.class.getName().equals(className)) {
+			return new EventPackageWithFrames(0);
+		}
+		if (HandshakePackage.class.getName().equals(className)) {
+			return new HandshakePackage();
+		}
+		if (RegisterPackage.class.getName().equals(className)) {
+			return new RegisterPackage();
+		}
+		if (RequireVarPackage.class.getName().equals(className)) {
+			return new RequireVarPackage(0, 0);
+		}
+		if (VarDataPackage.class.getName().equals(className)) {
+			return new VarDataPackage();
+		}
+		throw new IOException("Unsupported debugger packet class: " + className);
 	}
 
 	protected void writePackage(final AbstractPackage packet) throws IOException {

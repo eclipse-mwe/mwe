@@ -6,6 +6,7 @@ Bundle-Name: %pluginName
 Bundle-Vendor: %providerName
 Bundle-Localization: plugin
 Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.core.resources,
  org.eclipse.jdt.debug.ui,
  org.eclipse.jdt.launching,
  org.eclipse.ui,
@@ -35,4 +36,3 @@ Export-Package: org.eclipse.emf.mwe.internal.ui.debug.breakpoint.actions;x-frien
  org.eclipse.emf.mwe.ui.debug.processing,
  org.eclipse.emf.mwe.ui.workflow.util
 Automatic-Module-Name: org.eclipse.emf.mwe.ui
-

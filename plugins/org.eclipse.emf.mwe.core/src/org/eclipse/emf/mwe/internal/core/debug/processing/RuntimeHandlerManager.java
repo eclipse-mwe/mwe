@@ -43,6 +43,8 @@ public class RuntimeHandlerManager implements Runnable {
 
 	private volatile Exception registrationFailure;
 
+	private volatile boolean registrationSucceeded;
+
 	// -------------------------------------------------------------------------
 
 	public RuntimeHandlerManager(final DebugMonitor monitor) {
@@ -68,6 +70,7 @@ public class RuntimeHandlerManager implements Runnable {
 	 * Wait until the debugger has registered all runtime handlers and adapters.
 	 * The adapter registration packet is sent last by the Eclipse debugger and
 	 * therefore acts as the initialization barrier for the existing protocol.
+	 * The packet is sent even when no runtime adapters are contributed.
 	 *
 	 * @throws IOException
 	 *             if registration fails or does not complete in time
@@ -102,8 +105,12 @@ public class RuntimeHandlerManager implements Runnable {
 			}
 		}
 		catch (Exception e) {
-			registrationFailure = e;
-			registrationComplete.countDown();
+			// Once the ADAPTERS packet has opened the barrier, a later socket
+			// shutdown is normal and must not turn into a registration failure.
+			if (!registrationSucceeded) {
+				registrationFailure = e;
+				registrationComplete.countDown();
+			}
 			if (!(e instanceof IOException)) {
 				logger.error(e.getMessage(), e);
 			}
@@ -131,7 +138,7 @@ public class RuntimeHandlerManager implements Runnable {
 				handler.startListener();
 			}
 		}
-		else {
+		else if (packet.type == RegisterPackage.ADAPTERS) {
 			ElementAdapter adapter = null;
 			for (String className : packet.classNames) {
 				final Class<?> clazz = ResourceLoaderFactory.createResourceLoader().loadClass(className);
@@ -143,7 +150,11 @@ public class RuntimeHandlerManager implements Runnable {
 				adapter = (ElementAdapter) clazz.getDeclaredConstructor().newInstance();
 				monitor.addAdapter(adapter);
 			}
+			registrationSucceeded = true;
 			registrationComplete.countDown();
+		}
+		else {
+			throw new IOException("Unknown debugger registration packet type: " + packet.type);
 		}
 	}
 

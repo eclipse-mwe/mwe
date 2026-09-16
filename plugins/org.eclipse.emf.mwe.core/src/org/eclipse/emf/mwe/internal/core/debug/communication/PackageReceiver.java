@@ -121,7 +121,7 @@ public class PackageReceiver implements Runnable {
 	 * between breakpoint commands and the startup confirmation without changing the wire protocol.
 	 */
 	public void markPackageProcessed(final AbstractPackage packet) {
-			synchronized (receivedPackages) {
+		synchronized (receivedPackages) {
 			final Long sequence = packetSequences.get(packet);
 			if (sequence != null && packet instanceof BreakpointPackage) {
 				pendingBreakpointSequences.remove(sequence);
@@ -168,6 +168,9 @@ public class PackageReceiver implements Runnable {
 	private void close() {
 		interrupt = true;
 		synchronized (receivedPackages) {
+			receivedPackages.clear();
+			packetSequences.clear();
+			pendingBreakpointSequences.clear();
 			receivedPackages.notifyAll();
 		}
 	}
@@ -183,9 +186,11 @@ public class PackageReceiver implements Runnable {
 	}
 
 	/**
-	 * Returns the first packet of the specified type and removes from the packet list.
+	 * Returns the first packet of the specified type and removes it from the packet list.
+	 * The caller must hold the {@code receivedPackages} monitor. Breakpoint and confirmation
+	 * packets retain their sequence metadata until their respective consumers process them.
 	 */
-	private synchronized AbstractPackage popReceivedPackage(final Class<? extends AbstractPackage> type, final int refId) {
+	private AbstractPackage popReceivedPackage(final Class<? extends AbstractPackage> type, final int refId) {
 		for (AbstractPackage packet : receivedPackages) {
 			if (!type.isInstance(packet) || ((refId != 0) && (packet.refId != refId))) {
 				continue;

@@ -1,0 +1,6 @@
+<workflow>
+	<property name='a'/>
+	<property name='x'/>
+	<component class="org.eclipse.emf.mwe.core.Viech" id="x" a="${a}" b="${x}">
+	</component>
+</workflow>

@@ -31,8 +31,8 @@ public class MWESourceLookupParticipant extends AbstractSourceLookupParticipant 
 		if (sourceName != null) {
 			final IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 			final IPath path = new Path(sourceName);
-			IFile file = root.getFile(path);
-			if (!file.exists()) {
+			IFile file = path.segmentCount() >= 2 ? root.getFile(path) : null;
+			if ((file == null || !file.exists()) && path.isAbsolute()) {
 				file = root.getFileForLocation(path);
 			}
 			if (file != null && file.exists()) {

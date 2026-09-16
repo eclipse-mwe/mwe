@@ -181,6 +181,8 @@ public class PluginExtensionManager {
 	}
 
 	private void collectRuntimeAdaptersFromExtensions() throws IOException {
+		// This packet must remain the final registration packet. The runtime uses
+		// it as the initialization barrier, including when the list is empty.
 		RegisterPackage packet = new RegisterPackage();
 		packet.type = RegisterPackage.ADAPTERS;
 		IExtensionRegistry reg = Platform.getExtensionRegistry();

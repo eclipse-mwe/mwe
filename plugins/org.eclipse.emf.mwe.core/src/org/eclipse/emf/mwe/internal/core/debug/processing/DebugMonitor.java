@@ -249,7 +249,10 @@ public class DebugMonitor implements ProgressMonitor {
 	 */
 	@Override
 	public void finished(final Object element, final Object context) {
-		getAdapter(element).setContext(context);
+		final ElementAdapter adapter = getAdapter(element);
+		if (adapter != null) {
+			adapter.setContext(context);
+		}
 		fireEvent(PRE_TASK, element, END_FRAME);
 		fireEvent(SUSPENDED);
 		fireEvent(POST_TASK);

@@ -168,8 +168,6 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 					"");
 			List<String> progArgs = new ArrayList<String>();
 			progArgs.add(wfFileName);
-			progArgs.add("-m");
-			progArgs.add(DebugMonitor.class.getName());
 			if (!attribute.equals("")) {
 				String[] split = attribute.split("\\s");
 				for (String string : split) {
@@ -178,6 +176,8 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 					}
 				}
 			}
+			progArgs.add("-m");
+			progArgs.add(DebugMonitor.class.getName());
 
 			String vmArgs = configuration.getAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS,
 					(String) null);

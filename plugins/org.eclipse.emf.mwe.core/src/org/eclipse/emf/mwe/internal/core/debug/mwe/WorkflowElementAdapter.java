@@ -110,10 +110,12 @@ public class WorkflowElementAdapter implements ElementAdapter {
 
 		se.containerName = ComponentPrinter.getContainerName(comp);
 		se.elementName = ComponentPrinter.getElementName(comp);
-		se.resource = loc.getResource();
-		se.start = loc.getNameStart();
-		se.end = loc.getNameEnd();
-		se.line = loc.getLineNumber();
+		if (loc != null) {
+			se.resource = loc.getResource();
+			se.start = loc.getNameStart();
+			se.end = loc.getNameEnd();
+			se.line = loc.getLineNumber();
+		}
 		return se;
 	}
 
@@ -217,18 +219,31 @@ public class WorkflowElementAdapter implements ElementAdapter {
 		if (requestedResource == null || runtimeResource == null) {
 			return false;
 		}
-		return requestedResource.equals(runtimeResource) || requestedResource.endsWith(runtimeResource)
-				|| runtimeResource.endsWith(requestedResource);
+		return pathEndsWith(requestedResource, runtimeResource) || pathEndsWith(runtimeResource, requestedResource);
+	}
+
+	private boolean pathEndsWith(String path, String suffix) {
+		path = normalizeResource(path);
+		suffix = normalizeResource(suffix);
+		return path.equals(suffix) || path.endsWith("/" + suffix);
+	}
+
+	private String normalizeResource(String resource) {
+		String normalized = resource.replace('\\', '/');
+		while (normalized.startsWith("/")) {
+			normalized = normalized.substring(1);
+		}
+		return normalized;
 	}
 
 	private Location initialize(Location loc) {
-		if (loc.getResource() == null)
+		if (loc == null || loc.getResource() == null)
 			return null;
 		return locationAnalyser.adapt(loc);
 	}
 
 	private Location initializeEndLocation(Location loc) {
-		if (loc.getResource() == null)
+		if (loc == null || loc.getResource() == null)
 			return null;
 		return locationAnalyser.adaptEnd(loc);
 	}

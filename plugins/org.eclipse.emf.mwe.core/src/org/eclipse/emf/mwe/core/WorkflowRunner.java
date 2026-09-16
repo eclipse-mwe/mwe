@@ -144,7 +144,10 @@ public class WorkflowRunner {
 					runner.getContext());
 		} else {
 			params = resolveParams(line.getOptionValues(PARAM));
-			wfFile = line.getArgs()[0];
+			// The monitor option accepts multiple values, so Commons CLI may consume
+			// the workflow file when it appears after -m. Resolve it from the raw
+			// arguments instead of relying on the parsed positional arguments.
+			wfFile = findWorkflowFile(args);
 		}
 
 		if ((wfFile == null) || !(wfFile.endsWith(".oaw") || wfFile.endsWith(".mwe"))) {
@@ -185,11 +188,24 @@ public class WorkflowRunner {
 		} while ((wfUrl == null) && (index >= 0));
 
 		if (wfUrl == null) {
-			String msg = "can't find the workflow file '" + line.getArgs()[0] + "' in the current class path";
+			String msg = "can't find the workflow file '" + wfFile + "' in the current class path";
 				throw new IllegalStateException(msg);
 		}
 
 		return runner.run(wfFile, monitor, params, null);
+	}
+
+	private String findWorkflowFile(final String[] args) {
+		String workflowFile = null;
+		for (final String arg : args) {
+			if (arg.endsWith(".oaw") || arg.endsWith(".mwe")) {
+				if (workflowFile != null) {
+					throw new IllegalStateException("Workflow file already defined as '" + workflowFile + "'!");
+				}
+				workflowFile = arg;
+			}
+		}
+		return workflowFile;
 	}
 
 	protected static CommandLine getCommandLine(String[] args) throws ParseException {

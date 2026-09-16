@@ -1,0 +1,3 @@
+<workflow>
+	<bean class="aaa.Bbbb" stringParam="${s}"/>
+</workflow>

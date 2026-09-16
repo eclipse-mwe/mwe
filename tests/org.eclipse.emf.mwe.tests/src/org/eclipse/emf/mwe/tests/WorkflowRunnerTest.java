@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2007, 2015 itemis AG (http://www.itemis.eu) and others.
+ * Copyright (c) 2007, 2026 itemis AG (http://www.itemis.eu) and others.
  * This program and the accompanying materials are made available under the
  * terms of the Eclipse Public License 2.0 which is available at
  * http://www.eclipse.org/legal/epl-2.0.
@@ -36,6 +36,22 @@ public class WorkflowRunnerTest extends Assert {
 			fail("no errors expected");
 		}
 
+	}
+
+	@Test public void testParamValueEndingWithWorkflowExtension() throws Exception {
+		WorkflowRunner.main(new String[]{
+				"test/res/complex/aCompWithSeveralParams.mwe",
+				"-p", "s=hallo",
+				"-p", "i=123",
+				"-p", "modelFile=input.mwe"});
+	}
+
+	@Test public void testWorkflowFileAfterMonitorOption() throws Exception {
+		WorkflowRunner.main(new String[]{
+				"-m", NullProgressMonitor.class.getName(),
+				"test/res/complex/aCompWithSeveralParams.mwe",
+				"-p", "s=hallo",
+				"-p", "i=123"});
 	}
 
 }

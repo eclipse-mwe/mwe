@@ -144,10 +144,16 @@ public class WorkflowRunner {
 					runner.getContext());
 		} else {
 			params = resolveParams(line.getOptionValues(PARAM));
-			// The monitor option accepts multiple values, so Commons CLI may consume
-			// the workflow file when it appears after -m. Resolve it from the raw
-			// arguments instead of relying on the parsed positional arguments.
-			wfFile = findWorkflowFile(args);
+			final String[] positionalArgs = line.getArgs();
+			if (positionalArgs.length > 0) {
+				wfFile = positionalArgs[0];
+			} else {
+				// The monitor option accepts multiple values, so Commons CLI may consume
+				// the workflow file when it appears after -m. In that legacy form, look
+				// only through the monitor values; scanning the raw arguments would also
+				// mistake a -p value such as modelFile=input.mwe for a second workflow.
+				wfFile = findWorkflowFile(monitorOptValues);
+			}
 		}
 
 		if ((wfFile == null) || !(wfFile.endsWith(".oaw") || wfFile.endsWith(".mwe"))) {
@@ -197,6 +203,9 @@ public class WorkflowRunner {
 
 	private String findWorkflowFile(final String[] args) {
 		String workflowFile = null;
+		if (args == null) {
+			return null;
+		}
 		for (final String arg : args) {
 			if (arg.endsWith(".oaw") || arg.endsWith(".mwe")) {
 				if (workflowFile != null) {

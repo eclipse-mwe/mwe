@@ -27,8 +27,19 @@ public class MWESourceLookupParticipant extends AbstractSourceLookupParticipant 
 
 	@Override
 	public Object[] findSourceElements(final Object object) throws CoreException {
+		final Object[] sourceElements = super.findSourceElements(object);
+		if (sourceElements.length > 0) {
+			return sourceElements;
+		}
+
 		final String sourceName = getSourceName(object);
 		if (sourceName != null) {
+			/*
+			 * The legacy MWE runtime reports workspace-qualified names such as
+			 * /project/workflow.mwe. Standard source containers search relative to
+			 * their configured roots, so retain this workspace lookup as a fallback
+			 * for those names after configured source lookup has been attempted.
+			 */
 			final IWorkspaceRoot root = ResourcesPlugin.getWorkspace().getRoot();
 			final IPath path = new Path(sourceName);
 			IFile file = path.segmentCount() >= 2 ? root.getFile(path) : null;
@@ -39,7 +50,7 @@ public class MWESourceLookupParticipant extends AbstractSourceLookupParticipant 
 				return new Object[] { file };
 			}
 		}
-		return super.findSourceElements(object);
+		return sourceElements;
 	}
 
 	@Override

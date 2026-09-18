@@ -18,6 +18,7 @@ import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -30,6 +31,9 @@ import org.eclipse.emf.mwe.internal.core.debug.communication.packages.Confirmati
  * customers.
  */
 public class PackageReceiver implements Runnable {
+	/** Maximum time allowed for an earlier breakpoint packet to be processed. */
+	private static final long BREAKPOINT_PROCESSING_TIMEOUT_MILLIS = 10000L;
+
 	private final ArrayList<AbstractPackage> receivedPackages;
 
 	private final Map<AbstractPackage, Long> packetSequences;
@@ -140,9 +144,15 @@ public class PackageReceiver implements Runnable {
 			if (boundary == null) {
 				return;
 			}
+			final long deadline = System.nanoTime()
+					+ TimeUnit.MILLISECONDS.toNanos(BREAKPOINT_PROCESSING_TIMEOUT_MILLIS);
 			while (hasPendingBreakpointBefore(boundary) && connection.isConnected() && !interrupt) {
+				final long remaining = deadline - System.nanoTime();
+				if (remaining <= 0) {
+					break;
+				}
 				try {
-					receivedPackages.wait();
+					TimeUnit.NANOSECONDS.timedWait(receivedPackages, remaining);
 				}
 				catch (final InterruptedException e) {
 					Thread.currentThread().interrupt();
@@ -150,6 +160,9 @@ public class PackageReceiver implements Runnable {
 				}
 			}
 			if (hasPendingBreakpointBefore(boundary)) {
+				if (connection.isConnected() && !interrupt) {
+					throw new InterruptedIOException("Timed out waiting for breakpoint processing");
+				}
 				throw new InterruptedIOException("Connection closed while waiting for breakpoint processing");
 			}
 			packetSequences.remove(packet);
@@ -165,12 +178,15 @@ public class PackageReceiver implements Runnable {
 		return false;
 	}
 
+	/**
+	 * Marks the receiver as closed and wakes waiting consumers. Packets that were
+	 * received before the close remain available so consumers can drain the queue;
+	 * a consumer that cannot find its requested packet receives the close
+	 * exception instead.
+	 */
 	private void close() {
 		interrupt = true;
 		synchronized (receivedPackages) {
-			receivedPackages.clear();
-			packetSequences.clear();
-			pendingBreakpointSequences.clear();
 			receivedPackages.notifyAll();
 		}
 	}

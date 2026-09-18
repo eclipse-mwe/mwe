@@ -117,8 +117,14 @@ public class WorkflowRunner {
 					i++; // ignore this and next element
 				}
 				else if (arg.equals("-" + MONITOR) || arg.equals("--monitorClass")) {
-					// i++; // ignore this and next element
-					i = i + monitorOptValues.length;
+					// hasArgs() consumes all following non-option tokens. The parsed
+					// values are aggregated across all monitor options, so their length
+					// cannot be used as an index into the raw argument array.
+					i++;
+					while (i < args.length && !args[i].startsWith("-")) {
+						i++;
+					}
+					i--;
 				}
 				else if (arg.endsWith(".oaw") || arg.endsWith(".mwe")) {
 					if (wfFile != null) {
@@ -130,6 +136,9 @@ public class WorkflowRunner {
 				else {
 					unprocessedArgs.add(arg);
 				}
+			}
+			if (wfFile == null) {
+				wfFile = findWorkflowFile(monitorOptValues);
 			}
 
 			final Class<?> cmdLineProcessor = ResourceLoaderFactory.createResourceLoader().loadClass(
@@ -160,23 +169,28 @@ public class WorkflowRunner {
 			wrongCall(line);
 			return false;
 		}
+		final String[] monitorArgs = removeWorkflowFile(monitorOptValues, wfFile);
+		if ((monitorArgs != null) && (monitorArgs.length == 0)) {
+			wrongCall(line);
+			return false;
+		}
 
 		ProgressMonitor monitor = null;
 
-		if (monitorOptValues != null) {
-				final Class<?> clazz = ResourceLoaderFactory.createResourceLoader().loadClass(monitorOptValues[0]);
-				if (clazz == null) {
-					throw new ClassNotFoundException("Didn't find class " + monitorOptValues[0]);
-				}
-				monitor = (ProgressMonitor) clazz.getDeclaredConstructor().newInstance();
-				if (monitor instanceof ProgressMonitor2) {
-					((ProgressMonitor2)monitor).init(monitorOptValues);
-				} else if(monitor instanceof DebugMonitor) {
-					// this complication is because of an API problem.
-					// debug monitor throws an IOException and is not 
-					// compatible with ProgressMonitor2 interface.
-					((DebugMonitor)monitor).init(monitorOptValues);
-				}
+		if (monitorArgs != null) {
+			final Class<?> clazz = ResourceLoaderFactory.createResourceLoader().loadClass(monitorArgs[0]);
+			if (clazz == null) {
+				throw new ClassNotFoundException("Didn't find class " + monitorArgs[0]);
+			}
+			monitor = (ProgressMonitor) clazz.getDeclaredConstructor().newInstance();
+			if (monitor instanceof ProgressMonitor2) {
+				((ProgressMonitor2) monitor).init(monitorArgs);
+			} else if (monitor instanceof DebugMonitor) {
+				// this complication is because of an API problem.
+				// debug monitor throws an IOException and is not
+				// compatible with ProgressMonitor2 interface.
+				((DebugMonitor) monitor).init(monitorArgs);
+			}
 		}
 
 		// normalize wfFile name so that it can be found in the class path
@@ -215,6 +229,22 @@ public class WorkflowRunner {
 			}
 		}
 		return workflowFile;
+	}
+
+	private String[] removeWorkflowFile(final String[] args, final String workflowFile) {
+		if (args == null || workflowFile == null) {
+			return args;
+		}
+		final List<String> remainingArgs = new ArrayList<String>(args.length);
+		boolean removed = false;
+		for (final String arg : args) {
+			if (!removed && workflowFile.equals(arg)) {
+				removed = true;
+			} else {
+				remainingArgs.add(arg);
+			}
+		}
+		return removed ? remainingArgs.toArray(new String[0]) : args;
 	}
 
 	protected static CommandLine getCommandLine(String[] args) throws ParseException {

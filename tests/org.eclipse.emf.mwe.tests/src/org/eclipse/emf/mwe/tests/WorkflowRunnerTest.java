@@ -9,10 +9,15 @@
 package org.eclipse.emf.mwe.tests;
 
 import java.util.Collections;
+import java.util.Map;
 
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.ParseException;
 import org.eclipse.emf.mwe.core.WorkflowEngine;
+import org.eclipse.emf.mwe.core.WorkflowContext;
 import org.eclipse.emf.mwe.core.WorkflowRunner;
 import org.eclipse.emf.mwe.core.monitor.NullProgressMonitor;
+import org.eclipse.emf.mwe.core.monitor.ProgressMonitor2;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -47,11 +52,91 @@ public class WorkflowRunnerTest extends Assert {
 	}
 
 	@Test public void testWorkflowFileAfterMonitorOption() throws Exception {
-		WorkflowRunner.main(new String[]{
-				"-m", NullProgressMonitor.class.getName(),
+		RecordingProgressMonitor.lastArgs = null;
+		final String[] args = new String[]{
+				"-m", RecordingProgressMonitor.class.getName(),
+				"monitor-arg",
 				"test/res/complex/aCompWithSeveralParams.mwe",
 				"-p", "s=hallo",
-				"-p", "i=123"});
+				"-p", "i=123"};
+
+		assertTrue(new WorkflowRunner().doRun(TestWorkflowRunner.parse(args), args));
+		assertArrayEquals(new String[]{RecordingProgressMonitor.class.getName(), "monitor-arg"},
+				RecordingProgressMonitor.lastArgs);
+		assertFalse(contains(RecordingProgressMonitor.lastArgs, "test/res/complex/aCompWithSeveralParams.mwe"));
+	}
+
+	@Test public void testCmdLineProcessorWithWorkflowAfterMonitorOption() throws Exception {
+		RecordingProgressMonitor.lastArgs = null;
+		RecordingCommandLineProcessor.lastArgs = null;
+		final String[] args = new String[]{
+				"-c", RecordingCommandLineProcessor.class.getName(),
+				"-m", RecordingProgressMonitor.class.getName(),
+				"monitor-arg",
+				"test/res/complex/aCompWithSeveralParams.mwe",
+				"-p", "s=hallo",
+				"-p", "i=123"};
+
+		assertTrue(new WorkflowRunner().doRun(TestWorkflowRunner.parse(args), args));
+		assertArrayEquals(new String[]{"-p", "s=hallo", "-p", "i=123"}, RecordingCommandLineProcessor.lastArgs);
+		assertArrayEquals(new String[]{RecordingProgressMonitor.class.getName(), "monitor-arg"},
+				RecordingProgressMonitor.lastArgs);
+	}
+
+	@Test public void testMonitorOptionRequiresMonitorClass() throws Exception {
+		final String[] args = new String[]{"-m", "test/res/complex/aCompWithSeveralParams.mwe"};
+		final TestWorkflowRunner runner = new TestWorkflowRunner();
+
+		assertFalse(runner.doRun(TestWorkflowRunner.parse(args), args));
+		assertTrue(runner.wrongCall);
+	}
+
+	private boolean contains(final String[] args, final String value) {
+		for (final String arg : args) {
+			if (value.equals(arg)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static class RecordingProgressMonitor extends NullProgressMonitor implements ProgressMonitor2 {
+		private static String[] lastArgs;
+
+		public RecordingProgressMonitor() {
+		}
+
+		@Override
+		public void init(final String[] args) {
+			lastArgs = args.clone();
+		}
+	}
+
+	public static class RecordingCommandLineProcessor {
+		private static String[] lastArgs;
+
+		public RecordingCommandLineProcessor() {
+		}
+
+		@SuppressWarnings("rawtypes")
+		public void processCmdLine(final String[] args, final Map params, final WorkflowContext context) {
+			lastArgs = args.clone();
+			params.put("s", "hallo");
+			params.put("i", "123");
+		}
+	}
+
+	private static class TestWorkflowRunner extends WorkflowRunner {
+		private boolean wrongCall;
+
+		private static CommandLine parse(final String[] args) throws ParseException {
+			return getCommandLine(args);
+		}
+
+		@Override
+		protected void wrongCall(final CommandLine line) {
+			wrongCall = true;
+		}
 	}
 
 }

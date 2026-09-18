@@ -176,6 +176,11 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 					}
 				}
 			}
+			final String monitorClassOption = findMonitorClassOption(progArgs);
+			if (monitorClassOption != null) {
+				throw new DebugException(Activator.createErrorStatus(
+						"The -m/--monitorClass option is reserved for MWE debugger launches: " + monitorClassOption, null));
+			}
 			progArgs.add("-m");
 			progArgs.add(DebugMonitor.class.getName());
 
@@ -195,6 +200,16 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 			launcher.run(runnerConfig, launch, monitor);
 		}
 		monitor.done();
+	}
+
+	private String findMonitorClassOption(final List<String> arguments) {
+		for (final String argument : arguments) {
+			if (argument.startsWith("-m")
+					|| "--monitorClass".equals(argument) || argument.startsWith("--monitorClass=")) {
+				return argument;
+			}
+		}
+		return null;
 	}
 
 	/* (non-Javadoc)

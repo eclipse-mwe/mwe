@@ -15,11 +15,14 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.Proxy;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.AbstractPackage;
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.BreakpointPackage;
@@ -36,10 +39,17 @@ import org.eclipse.emf.mwe.internal.core.debug.communication.packages.VarDataPac
  * This class implements a socket connection model. "Packages" (units of information) can be transfered between two
  * different virtual machines. During the initialisation of a socket connection a reader and a writer thread are
  * established. This class can be used both on the sender and receiver side.
+ * <p>
+ * The debugger wire protocol is intentionally closed: packet class names received from the peer are matched against
+ * the built-in packet factory entries instead of being loaded reflectively. Adding a packet type therefore requires
+ * updating both communicating runtimes. This restriction applies to packet types only; runtime handlers and element
+ * adapters remain extension points and are registered separately.
  */
 public class Connection {
 
 	private static final InetAddress LOOPBACK_ADDRESS = InetAddress.getLoopbackAddress();
+
+	private static final int CONNECT_TIMEOUT_MILLIS = 10000;
 
 	private ServerSocket ssocket;
 
@@ -121,11 +131,73 @@ public class Connection {
 	 * @throws IOException
 	 */
 	public void connect(final int port) throws IOException {
-		socket = new Socket(Proxy.NO_PROXY);
-		final InetSocketAddress endpoint = new InetSocketAddress(LOOPBACK_ADDRESS, port);
-		socket.connect(endpoint);
+		socket = connectToLoopback(port);
 		establishReaderAndWriter();
 		replyHandshake();
+	}
+
+	/**
+	 * Connects to the debugger on a loopback address of this machine. The listening JVM and this runtime JVM may have
+	 * different IPv4/IPv6 preferences, so the loopback address selected by one JVM is not necessarily usable by the
+	 * other one.
+	 *
+	 * @param port the communication port
+	 * @return the connected socket
+	 * @throws IOException if no loopback address can reach the debugger
+	 */
+	private Socket connectToLoopback(final int port) throws IOException {
+		IOException lastFailure = null;
+		for (final InetAddress candidate : loopbackCandidates()) {
+			final Socket candidateSocket = new Socket();
+			try {
+				candidateSocket.connect(new InetSocketAddress(candidate, port), CONNECT_TIMEOUT_MILLIS);
+				return candidateSocket;
+			} catch (final IOException e) {
+				lastFailure = e;
+				try {
+					candidateSocket.close();
+				} catch (final IOException ignored) {
+					// Nothing left to do; try the next loopback candidate.
+				}
+			}
+		}
+
+		final ConnectException failure = new ConnectException("Couldn't reach the debugger on loopback port " + port);
+		if (lastFailure != null) {
+			failure.initCause(lastFailure);
+		}
+		throw failure;
+	}
+
+	private static List<InetAddress> loopbackCandidates() {
+		final List<InetAddress> candidates = new ArrayList<InetAddress>();
+		addLoopbackCandidate(candidates, LOOPBACK_ADDRESS);
+		try {
+			for (final InetAddress address : InetAddress.getAllByName("localhost")) {
+				addLoopbackCandidate(candidates, address);
+			}
+		} catch (final UnknownHostException e) {
+			// The JVM-selected loopback address above is still usable if localhost is not resolvable.
+		}
+		// "localhost" may resolve to a single address family, so keep the literals as a last resort.
+		addLoopbackCandidate(candidates, literalAddress(new byte[]{127, 0, 0, 1}));
+		addLoopbackCandidate(candidates, literalAddress(new byte[]{
+				0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}));
+		return candidates;
+	}
+
+	private static void addLoopbackCandidate(final List<InetAddress> candidates, final InetAddress address) {
+		if ((address != null) && address.isLoopbackAddress() && !candidates.contains(address)) {
+			candidates.add(address);
+		}
+	}
+
+	private static InetAddress literalAddress(final byte[] address) {
+		try {
+			return InetAddress.getByAddress(address);
+		} catch (final UnknownHostException e) {
+			return null;
+		}
 	}
 
 	/**

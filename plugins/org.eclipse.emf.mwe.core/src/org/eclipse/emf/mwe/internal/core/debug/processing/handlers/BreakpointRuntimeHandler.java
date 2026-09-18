@@ -15,6 +15,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.emf.mwe.core.debug.model.SyntaxElement;
 import org.eclipse.emf.mwe.core.debug.processing.ElementAdapter;
 import org.eclipse.emf.mwe.internal.core.debug.communication.Connection;
@@ -30,6 +32,8 @@ import org.eclipse.emf.mwe.internal.core.debug.processing.RuntimeHandler;
  * breakpoints.
  */
 public class BreakpointRuntimeHandler implements RuntimeHandler, ProcessHandler, Runnable {
+
+	private static final Log logger = LogFactory.getLog(BreakpointRuntimeHandler.class);
 
 	public static final int SET = 1;
 
@@ -80,6 +84,12 @@ public class BreakpointRuntimeHandler implements RuntimeHandler, ProcessHandler,
 				final BreakpointPackage packet = (BreakpointPackage) connection.listenForPackage(BreakpointPackage.class);
 				try {
 					handle(packet);
+				}
+				catch (final RuntimeException e) {
+					// A malformed or not-yet-resolvable breakpoint must not terminate
+					// the listener. The confirmation barrier relies on this thread
+					// continuing to consume subsequent packets.
+					logger.error("Could not handle debugger breakpoint packet", e);
 				}
 				finally {
 					connection.markPackageProcessed(packet);

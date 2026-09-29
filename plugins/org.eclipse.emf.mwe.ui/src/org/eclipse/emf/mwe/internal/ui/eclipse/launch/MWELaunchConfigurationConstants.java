@@ -20,8 +20,6 @@ public interface MWELaunchConfigurationConstants {
 
 	public static final String ATTR_MWE_WORKFLOW_FILE = "startWorkflow";
 
-	public static final String ATTR_MWE_JAVA_DEBUG_MODE = "java_debug";
-	
 	// must match with the launchConfigurationType id from plugin.xml
 	public static final String WORKFLOW_LAUNCH_CONFIGURATION_TYPE_ID = "org.eclipse.emf.mwe.ui.MWELaunchConfigType";
 

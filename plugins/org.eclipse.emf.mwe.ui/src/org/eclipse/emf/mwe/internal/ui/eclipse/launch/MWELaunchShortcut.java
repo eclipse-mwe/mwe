@@ -174,7 +174,6 @@ public class MWELaunchShortcut implements ILaunchShortcut {
 		wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME, info.project);
 		wc.setAttribute(MWELaunchConfigurationConstants.ATTR_MWE_WORKFLOW_FILE, info.wfFile);
 		wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_STOP_IN_MAIN, false);
-		wc.setAttribute(MWELaunchConfigurationConstants.ATTR_MWE_JAVA_DEBUG_MODE, false);
 
 		// the values displayed in the VM arguments field
 		wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS, Messages.MWELaunchShortcut_NeededVMArguments);

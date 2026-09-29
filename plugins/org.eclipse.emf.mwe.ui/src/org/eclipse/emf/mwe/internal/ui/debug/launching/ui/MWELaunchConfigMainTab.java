@@ -48,9 +48,7 @@ import org.eclipse.ui.dialogs.ResourceListSelectionDialog;
 /**
  * This class defines the workflow launch config main tab. It is based on the Java one
  * <code>org.eclipse.jdt.debug.ui.launchConfigurations.JavaMainTab</code>, but shows a workflow file instead of
- * a Java class.<br>
- * There is an additional <code>javaDebugCheckbox</code> to be able to select the debug process (MWE debug or
- * Java debug)
+ * a Java class.
  * 
  */
 public class MWELaunchConfigMainTab extends JavaLaunchTab {
@@ -66,8 +64,6 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 	private Button wfButton;
 
 	private Button stopInMainCheckbox;
-
-	private Button javaDebugCheckbox;
 
 	private Path wfPath;
 
@@ -98,9 +94,7 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 		// workflow group
 		wfButton = createPushButton(parent, Messages.MWELaunchConfigMainTab_Search, null);
 		stopInMainCheckbox = createCheckButton(parent, Messages.MWELaunchConfigMainTab_StopInMain);
-		javaDebugCheckbox = createCheckButton(parent, Messages.MWELaunchConfigMainTab_JavaDebug);
-		wfText = createGroup(comp, Messages.MWELaunchConfigMainTab_initialWorkflowFile, wfButton, new Button[] { stopInMainCheckbox,
-				javaDebugCheckbox });
+		wfText = createGroup(comp, Messages.MWELaunchConfigMainTab_initialWorkflowFile, wfButton, new Button[] { stopInMainCheckbox });
 	}
 
 	private Text createGroup(final Composite comp, final String title, final Button searchButton, final Button[] checkButtons) {
@@ -147,8 +141,6 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 			setWfText(config.getAttribute(MWELaunchConfigurationConstants.ATTR_MWE_WORKFLOW_FILE, ""));
 			stopInMainCheckbox.setSelection(config.getAttribute(
 					IJavaLaunchConfigurationConstants.ATTR_STOP_IN_MAIN, false));
-			javaDebugCheckbox.setSelection(config.getAttribute(
-					MWELaunchConfigurationConstants.ATTR_MWE_JAVA_DEBUG_MODE, false));
 		} catch (CoreException e) {
 			setErrorMessage(e.getMessage());
 		}
@@ -170,8 +162,6 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 		config.setAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME, projText.getText().trim());
 		config.setAttribute(MWELaunchConfigurationConstants.ATTR_MWE_WORKFLOW_FILE, wfPath.toString());
 		config.setAttribute(IJavaLaunchConfigurationConstants.ATTR_STOP_IN_MAIN, stopInMainCheckbox
-				.getSelection());
-		config.setAttribute(MWELaunchConfigurationConstants.ATTR_MWE_JAVA_DEBUG_MODE, javaDebugCheckbox
 				.getSelection());
 	}
 

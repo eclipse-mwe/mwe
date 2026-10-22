@@ -24,7 +24,6 @@ public class Messages extends NLS {
 	public static String MWELaunchConfigMainTab_ProjectSelectDlgMessage;
 	public static String MWELaunchConfigMainTab_ProjectSelectDlgTitle;
 	public static String MWELaunchConfigMainTab_Search;
-	public static String MWELaunchConfigMainTab_StopInMain;
 	public static String MWELaunchConfigMainTab_WorkflowPrompt;
 	public static String MWELaunchConfigMainTab_WorkflowSelectDlgMessage;
 	public static String MWELaunchConfigMainTab_WorkflowSelectDlgTitle;

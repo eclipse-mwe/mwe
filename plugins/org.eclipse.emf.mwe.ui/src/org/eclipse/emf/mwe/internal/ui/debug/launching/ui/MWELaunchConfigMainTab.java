@@ -63,8 +63,6 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 
 	private Button wfButton;
 
-	private Button stopInMainCheckbox;
-
 	private Path wfPath;
 
 	// ********************************************************** create Control
@@ -87,17 +85,16 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 
 		// Project group
 		projButton = createPushButton(parent, Messages.MWELaunchConfigMainTab_Browse, null);
-		projText = createGroup(comp, Messages.MWELaunchConfigMainTab_Project, projButton, null);
+		projText = createGroup(comp, Messages.MWELaunchConfigMainTab_Project, projButton);
 
 		createVerticalSpacer(comp, 1);
 
 		// workflow group
 		wfButton = createPushButton(parent, Messages.MWELaunchConfigMainTab_Search, null);
-		stopInMainCheckbox = createCheckButton(parent, Messages.MWELaunchConfigMainTab_StopInMain);
-		wfText = createGroup(comp, Messages.MWELaunchConfigMainTab_initialWorkflowFile, wfButton, new Button[] { stopInMainCheckbox });
+		wfText = createGroup(comp, Messages.MWELaunchConfigMainTab_initialWorkflowFile, wfButton);
 	}
 
-	private Text createGroup(final Composite comp, final String title, final Button searchButton, final Button[] checkButtons) {
+	private Text createGroup(final Composite comp, final String title, final Button searchButton) {
 		Font font = comp.getFont();
 		Group group = new Group(comp, SWT.NONE);
 		group.setText(title);
@@ -112,15 +109,6 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 		text.addModifyListener(fListener);
 		searchButton.setParent(group);
 		searchButton.addSelectionListener(fListener);
-		if (checkButtons != null) {
-			for (Button button : checkButtons) {
-				button.setParent(group);
-				GridData gd = new GridData();
-				gd.horizontalSpan = 2;
-				button.setLayoutData(gd);
-				button.addSelectionListener(fListener);
-			}
-		}
 		return text;
 	}
 
@@ -139,8 +127,6 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 		try {
 			projText.setText(config.getAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME, ""));
 			setWfText(config.getAttribute(MWELaunchConfigurationConstants.ATTR_MWE_WORKFLOW_FILE, ""));
-			stopInMainCheckbox.setSelection(config.getAttribute(
-					IJavaLaunchConfigurationConstants.ATTR_STOP_IN_MAIN, false));
 		} catch (CoreException e) {
 			setErrorMessage(e.getMessage());
 		}
@@ -161,8 +147,6 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 	public void performApply(final ILaunchConfigurationWorkingCopy config) {
 		config.setAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME, projText.getText().trim());
 		config.setAttribute(MWELaunchConfigurationConstants.ATTR_MWE_WORKFLOW_FILE, wfPath.toString());
-		config.setAttribute(IJavaLaunchConfigurationConstants.ATTR_STOP_IN_MAIN, stopInMainCheckbox
-				.getSelection());
 	}
 
 	@Override

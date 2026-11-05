@@ -52,8 +52,10 @@ pipeline {
       steps {
         dir ('git-repo') {
           script {
-            // On the first build of a new branch Jenkins doesn't know the parameters yet,
-            // so params.RELEASE_TYPE is empty. Never treat that as a release.
+            // On the first build of a new branch Jenkins doesn't know the job parameters yet,
+            // so the environment variable $RELEASE_TYPE is empty (params.RELEASE_TYPE gets the
+            // declarative default). Use BUILD_RELEASE_TYPE in sh steps, never $RELEASE_TYPE.
+            // The fallback is a safety net: a missing value is never treated as a release.
             env.BUILD_RELEASE_TYPE = params.RELEASE_TYPE ?: 'Integration'
             echo "RELEASE_TYPE='${params.RELEASE_TYPE}' => BUILD_RELEASE_TYPE=${env.BUILD_RELEASE_TYPE}"
             def scmVars = checkout scm

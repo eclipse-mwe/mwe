@@ -19,7 +19,11 @@ pipeline {
   }
 
   triggers {
-    cron(env.BRANCH_NAME == 'master' ? 'H H(0-1) * * *' : '')
+    // Nightly build only for master of the upstream repository, not for forks
+    // (e.g. a private fork used for security fixes). This runs before checkout, so the
+    // URL comes from the job's SCM configuration (same check as IS_UPSTREAM in Prepare).
+    // The repo check comes first so that every build evaluates it, not only master builds.
+    cron((scm.userRemoteConfigs[0]?.url ==~ /(https:\/\/|git@)github\.com[\/:]eclipse-mwe\/mwe(\.git)?\/?/) && env.BRANCH_NAME == 'master' ? 'H H(0-1) * * *' : '')
   }
 
   options {
@@ -68,6 +72,7 @@ pipeline {
             env.IS_UPSTREAM = isUpstream ? 'true' : 'false'
             env.PUBLISH_SNAPSHOTS = (env.BRANCH_NAME == 'master' && isUpstream) ? 'true' : 'false'
             echo "GIT_URL='${gitUrl}', BRANCH_NAME='${env.BRANCH_NAME}', IS_UPSTREAM=${env.IS_UPSTREAM} => PUBLISH_SNAPSHOTS=${env.PUBLISH_SNAPSHOTS}"
+            echo "SCM URL used for the cron trigger: '${scm.userRemoteConfigs[0]?.url}'"
           }
         }
         dir ('git-repo-nightly') {

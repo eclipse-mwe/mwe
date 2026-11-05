@@ -51,7 +51,21 @@ pipeline {
       }
       steps {
         dir ('git-repo') {
-          checkout scm
+          script {
+            // On the first build of a new branch Jenkins doesn't know the parameters yet,
+            // so params.RELEASE_TYPE is empty. Never treat that as a release.
+            env.BUILD_RELEASE_TYPE = params.RELEASE_TYPE ?: 'Integration'
+            echo "RELEASE_TYPE='${params.RELEASE_TYPE}' => BUILD_RELEASE_TYPE=${env.BUILD_RELEASE_TYPE}"
+            def scmVars = checkout scm
+            // Integration builds only publish snapshots (Maven Central) and p2 nightlies
+            // when built from master of the upstream repository. Builds from forks
+            // (e.g. a private fork used for security fixes) don't publish them.
+            // If detection fails (GIT_URL missing or unexpected), nothing is published.
+            def gitUrl = scmVars.GIT_URL ?: ''
+            def isUpstream = gitUrl ==~ /(https:\/\/|git@)github\.com[\/:]eclipse-mwe\/mwe(\.git)?\/?/
+            env.PUBLISH_SNAPSHOTS = (env.BRANCH_NAME == 'master' && isUpstream) ? 'true' : 'false'
+            echo "GIT_URL='${gitUrl}', BRANCH_NAME='${env.BRANCH_NAME}', isUpstream=${isUpstream} => PUBLISH_SNAPSHOTS=${env.PUBLISH_SNAPSHOTS}"
+          }
         }
         dir ('git-repo-nightly') {
           checkout scm
@@ -67,9 +81,9 @@ pipeline {
           # call the versioning script when a release is built
           # this will set the final release number for Maven artifacts according to RELEASE_TYPE
           # and disable strict version checking by Tycho, so that p2 artifacts keep their qualifier
-          if [ "$RELEASE_TYPE" != "Integration" ]; then
+          if [ "$BUILD_RELEASE_TYPE" != "Integration" ]; then
             pushd $(pwd) && cd git-repo
-            bash ./set_version.sh --release=$RELEASE_TYPE
+            bash ./set_version.sh --release=$BUILD_RELEASE_TYPE
             popd
           fi
 
@@ -111,7 +125,7 @@ pipeline {
 
     stage ('Publish') {
       when {
-        expression { env.BRANCH_NAME == 'master' || params.RELEASE_TYPE != 'Integration' || params.FORCE_PUBLISH }
+        expression { env.PUBLISH_SNAPSHOTS == 'true' || env.BUILD_RELEASE_TYPE != 'Integration' || params.FORCE_PUBLISH }
       }
       steps {
         sshagent(['projects-storage.eclipse.org-bot-ssh']) {
@@ -173,7 +187,7 @@ pipeline {
             #
             # STEP 5: Recreate compositeArtifacts.xml & compositeContent.xml
             #
-            case "$RELEASE_TYPE" in
+            case "$BUILD_RELEASE_TYPE" in
               Integration) ;;
               GA) # Release
                 ssh genie.mwe@projects-storage.eclipse.org 'cat | /bin/bash /dev/stdin' "releases" < $SCRIPTS/create_composite_update_site.sh
@@ -269,13 +283,14 @@ def buildProject(targetPlatform, enforcedJDK = '', forceLocalDeployment = false)
       GOALS='clean deploy'
       if [ "${TARGET_PLATFORM}" == "org.eclipse.emf.mwe2.target.nightly" ]; then
         GOALS="${GOALS} -DaltDeploymentRepository=snapshot-repo::default::file:./my-local-snapshots-dir"
-      elif [ "${FORCE_LOCAL_DEPLOYMENT}" == "true" ] || [ "${BRANCH_NAME}" != "master" ] && [ "${RELEASE_TYPE}" == "Integration" ] && [ "${FORCE_PUBLISH}" != "true" ]; then
+      elif [ "${FORCE_LOCAL_DEPLOYMENT}" == "true" ] || \
+           { [ "${PUBLISH_SNAPSHOTS}" != "true" ] && [ "${BUILD_RELEASE_TYPE}" == "Integration" ] && [ "${FORCE_PUBLISH}" != "true" ]; }; then
         GOALS="${GOALS} -DaltDeploymentRepository=snapshot-repo::default::file:./my-local-snapshots-dir"
       else
         GOALS="${GOALS} -Psonatype-oss-release"
       fi
 
-      case "$RELEASE_TYPE" in
+      case "$BUILD_RELEASE_TYPE" in
         Integration) BUILD_TYPE='N' ;;
         GA) BUILD_TYPE='R' ;;
         *) BUILD_TYPE='S' ;;

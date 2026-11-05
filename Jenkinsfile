@@ -65,8 +65,9 @@ pipeline {
             // If detection fails (GIT_URL missing or unexpected), nothing is published.
             def gitUrl = scmVars.GIT_URL ?: ''
             def isUpstream = gitUrl ==~ /(https:\/\/|git@)github\.com[\/:]eclipse-mwe\/mwe(\.git)?\/?/
+            env.IS_UPSTREAM = isUpstream ? 'true' : 'false'
             env.PUBLISH_SNAPSHOTS = (env.BRANCH_NAME == 'master' && isUpstream) ? 'true' : 'false'
-            echo "GIT_URL='${gitUrl}', BRANCH_NAME='${env.BRANCH_NAME}', isUpstream=${isUpstream} => PUBLISH_SNAPSHOTS=${env.PUBLISH_SNAPSHOTS}"
+            echo "GIT_URL='${gitUrl}', BRANCH_NAME='${env.BRANCH_NAME}', IS_UPSTREAM=${env.IS_UPSTREAM} => PUBLISH_SNAPSHOTS=${env.PUBLISH_SNAPSHOTS}"
           }
         }
         dir ('git-repo-nightly') {
@@ -249,7 +250,12 @@ EOF
           lastResult = currentBuild.previousBuild.result
         }
 
-        if (curResult != 'SUCCESS' || lastResult != 'SUCCESS') {
+        // Only notify the public Matrix room for builds of the upstream repository.
+        // Builds from forks (e.g. a private fork used for security fixes) must not
+        // announce job or branch names there.
+        if (env.IS_UPSTREAM != 'true') {
+          echo "IS_UPSTREAM='${env.IS_UPSTREAM}' => skipping Matrix notification"
+        } else if (curResult != 'SUCCESS' || lastResult != 'SUCCESS') {
           def color = ''
           switch (curResult) {
             case 'SUCCESS':

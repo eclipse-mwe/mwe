@@ -51,7 +51,17 @@ pipeline {
       }
       steps {
         dir ('git-repo') {
-          checkout scm
+          script {
+            def scmVars = checkout scm
+            // Integration builds only publish snapshots (Maven Central) and p2 nightlies
+            // when built from master of the upstream repository. Builds from forks
+            // (e.g. a private fork used for security fixes) don't publish them.
+            // If detection fails (GIT_URL missing or unexpected), nothing is published.
+            def gitUrl = scmVars.GIT_URL ?: ''
+            def isUpstream = gitUrl ==~ /(https:\/\/|git@)github\.com[\/:]eclipse-mwe\/mwe(\.git)?\/?/
+            env.PUBLISH_SNAPSHOTS = (env.BRANCH_NAME == 'master' && isUpstream) ? 'true' : 'false'
+            echo "GIT_URL='${gitUrl}', BRANCH_NAME='${env.BRANCH_NAME}', isUpstream=${isUpstream} => PUBLISH_SNAPSHOTS=${env.PUBLISH_SNAPSHOTS}"
+          }
         }
         dir ('git-repo-nightly') {
           checkout scm
@@ -111,7 +121,7 @@ pipeline {
 
     stage ('Publish') {
       when {
-        expression { env.BRANCH_NAME == 'master' || params.RELEASE_TYPE != 'Integration' || params.FORCE_PUBLISH }
+        expression { env.PUBLISH_SNAPSHOTS == 'true' || params.RELEASE_TYPE != 'Integration' || params.FORCE_PUBLISH }
       }
       steps {
         sshagent(['projects-storage.eclipse.org-bot-ssh']) {
@@ -269,7 +279,8 @@ def buildProject(targetPlatform, enforcedJDK = '', forceLocalDeployment = false)
       GOALS='clean deploy'
       if [ "${TARGET_PLATFORM}" == "org.eclipse.emf.mwe2.target.nightly" ]; then
         GOALS="${GOALS} -DaltDeploymentRepository=snapshot-repo::default::file:./my-local-snapshots-dir"
-      elif [ "${FORCE_LOCAL_DEPLOYMENT}" == "true" ] || [ "${BRANCH_NAME}" != "master" ] && [ "${RELEASE_TYPE}" == "Integration" ] && [ "${FORCE_PUBLISH}" != "true" ]; then
+      elif [ "${FORCE_LOCAL_DEPLOYMENT}" == "true" ] || \
+           { [ "${PUBLISH_SNAPSHOTS}" != "true" ] && [ "${RELEASE_TYPE}" == "Integration" ] && [ "${FORCE_PUBLISH}" != "true" ]; }; then
         GOALS="${GOALS} -DaltDeploymentRepository=snapshot-repo::default::file:./my-local-snapshots-dir"
       else
         GOALS="${GOALS} -Psonatype-oss-release"

@@ -23,7 +23,7 @@ pipeline {
     // of it (e.g. one used for security fixes). This runs before checkout, so the URL
     // comes from the job's SCM configuration (same pattern as IS_UPSTREAM in Prepare).
     // The repo check comes first so that every build evaluates it, not only master builds.
-    cron((scm.userRemoteConfigs[0]?.url ==~ /(https:\/\/|git@)github\.com[\/:]eclipse-mwe\/mwe(\.git)?\/?/) && env.BRANCH_NAME == 'master' ? 'H H(0-1) * * *' : '')
+    cron((scm.userRemoteConfigs[0]?.url ==~ /(https:\/\/|ssh:\/\/([^@\/]+@)?|git@)github\.com(:[0-9]+)?[\/:]eclipse-mwe\/mwe(\.git)?\/?/) && env.BRANCH_NAME == 'master' ? 'H H(0-1) * * *' : '')
   }
 
   options {
@@ -68,7 +68,7 @@ pipeline {
             // (e.g. a private fork used for security fixes) don't publish them.
             // If detection fails (GIT_URL missing or unexpected), nothing is published.
             def gitUrl = scmVars.GIT_URL ?: ''
-            def isUpstream = gitUrl ==~ /(https:\/\/|git@)github\.com[\/:]eclipse-mwe\/mwe(\.git)?\/?/
+            def isUpstream = gitUrl ==~ /(https:\/\/|ssh:\/\/([^@\/]+@)?|git@)github\.com(:[0-9]+)?[\/:]eclipse-mwe\/mwe(\.git)?\/?/
             env.IS_UPSTREAM = isUpstream ? 'true' : 'false'
             env.PUBLISH_SNAPSHOTS = (env.BRANCH_NAME == 'master' && isUpstream) ? 'true' : 'false'
             echo "GIT_URL='${gitUrl}', BRANCH_NAME='${env.BRANCH_NAME}', IS_UPSTREAM=${env.IS_UPSTREAM} => PUBLISH_SNAPSHOTS=${env.PUBLISH_SNAPSHOTS}"

@@ -11,15 +11,15 @@
 
 		<tycho-version>5.0.4</tycho-version>
 		<maven.compiler.release>21</maven.compiler.release>
-		<maven-install-version>2.5.2</maven-install-version>
-		<maven-deploy-version>2.8.2</maven-deploy-version>
+		<maven-install-version>3.2.0</maven-install-version>
+		<maven-deploy-version>3.2.0</maven-deploy-version>
 		<maven-javadoc-version>3.12.0</maven-javadoc-version>
 		<commons-cli.version>1.11.0</commons-cli.version>
 		<guava.version>33.8.0-jre</guava.version>
 		<google-inject.version>7.0.0</google-inject.version>
 		<log4j.version>1.2.27</log4j.version>
 		<commons-logging.version>1.4.0</commons-logging.version>
-		<cbi-plugins.version>1.3.5</cbi-plugins.version>
+		<cbi-plugins.version>1.5.8</cbi-plugins.version>
 
 		<project.build.sourceEncoding>ISO-8859-1</project.build.sourceEncoding>
 		<project.reporting.outputEncoding>ISO-8859-1</project.reporting.outputEncoding>
@@ -160,7 +160,7 @@
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
 					<artifactId>maven-toolchains-plugin</artifactId>
-					<version>3.2.0</version>
+					<version>3.3.0</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
@@ -302,7 +302,7 @@
 					<plugin>
 						<groupId>org.sonatype.central</groupId>
 						<artifactId>central-publishing-maven-plugin</artifactId>
-						<version>0.8.0</version>
+						<version>0.12.0</version>
 						<extensions>true</extensions>
 						<configuration>
 							<publishingServerId>central</publishingServerId>

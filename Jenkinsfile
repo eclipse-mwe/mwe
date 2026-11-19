@@ -175,12 +175,12 @@ pipeline {
             # spaces and metacharacters outright, with no shell-dependent behavior
             # (no echo, no literal newline); the exact format is verified below.
             case "$VERSION" in
-              ''|*[!0-9A-Za-z.]*) echo "ERROR: missing or malformed version - aborting publish"; exit 1 ;;
+              ''|*[!0-9.]*) echo "ERROR: missing or malformed version - aborting publish"; exit 1 ;;
             esac
             case "$BUILD_ID" in
               ''|*[!NSR0-9]*) echo "ERROR: missing or malformed build id - aborting publish"; exit 1 ;;
             esac
-            if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+([.](Beta[0-9]{12}|M[0-5]|RC[12]))?$'; then
+            if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+$'; then
               echo "ERROR: missing or malformed version - aborting publish"
               exit 1
             fi

@@ -170,11 +170,19 @@ pipeline {
             VERSION=$($SCRIPTS/get_property.sh build-result/publisher.properties version)
             BUILD_ID=$($SCRIPTS/get_property.sh build-result/promote.properties build.id)
             BUILD_TYPE=$($SCRIPTS/get_build_type.sh "$BUILD_ID")
-            if ! echo "$VERSION" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+([.](Beta[0-9]{12}|M[0-5]|RC[12]))?$'; then
+            # printf, not echo below: echo may interpret backslash escapes, which can
+            # truncate the validated text on some shells. And grep matches per line,
+            # so reject embedded newlines first - otherwise a newline could smuggle
+            # a payload past the whitelist into the remote command.
+            case "$VERSION$BUILD_ID" in
+              *'
+ '*) echo "ERROR: multi-line version or build id - aborting publish"; exit 1 ;;
+            esac
+            if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+([.](Beta[0-9]{12}|M[0-5]|RC[12]))?$'; then
               echo "ERROR: missing or malformed version: '$VERSION' - aborting publish"
               exit 1
             fi
-            if ! echo "$BUILD_ID" | grep -Eq '^[NSR][0-9]{12}$'; then
+            if ! printf '%s' "$BUILD_ID" | grep -Eq '^[NSR][0-9]{12}$'; then
               echo "ERROR: missing or malformed build id: '$BUILD_ID' - aborting publish"
               exit 1
             fi

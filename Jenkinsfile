@@ -133,7 +133,15 @@ pipeline {
 
     stage ('Publish') {
       when {
-        expression { env.PUBLISH_SNAPSHOTS == 'true' || env.BUILD_RELEASE_TYPE != 'Integration' || params.FORCE_PUBLISH }
+        expression {
+          // Publishing must only ever happen from a 'master' branch, regardless of the
+          // repository the job is configured with (upstream, or a private fork used e.g.
+          // for security fixes that must be able to publish a release from their own
+          // 'master' before the fix is pushed to the upstream repository).
+          // PUBLISH_SNAPSHOTS additionally requires upstream 'master' (see Prepare).
+          env.BRANCH_NAME == 'master' &&
+            (env.PUBLISH_SNAPSHOTS == 'true' || env.BUILD_RELEASE_TYPE != 'Integration' || params.FORCE_PUBLISH)
+        }
       }
       steps {
         sshagent(['projects-storage.eclipse.org-bot-ssh']) {

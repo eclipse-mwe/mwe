@@ -65,5 +65,17 @@ public class WorkflowParserTest extends Assert {
         assertEquals("test.file", i.getFile());
         assertEquals(0, i.getChildren().size());
     }
+    
+    @Test
+    public void testDoctypeRejected() throws Exception {
+        final String wf = "<!DOCTYPE workflow [<!ENTITY xxe 'evil'>]>"
+                + "<workflow>&xxe;<component class='test.Comp'/></workflow>";
+        final Issues issues = new IssuesImpl();
+        final WorkflowParser parser = new WorkflowParser();
+        final org.eclipse.emf.mwe.internal.core.ast.AbstractASTBase root = parser.parse(new StringInputStream(wf), "dynamic", issues);
+        // doctypes (and with them entity declarations) are disallowed: the parse must fail closed
+        assertTrue(issues.hasErrors());
+        assertNull(root);
+    }
 
 }

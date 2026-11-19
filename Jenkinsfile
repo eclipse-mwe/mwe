@@ -156,32 +156,39 @@ pipeline {
       steps {
         sshagent(['projects-storage.eclipse.org-bot-ssh']) {
           sh '''
+            set -e
             REPO_SOURCE_DIR=build-result/p2.repository
-            # read properties from promote.properties & publisher.properties
-            # VERSION=$($SCRIPTS/get_property.sh build-result/publisher.properties version)
-            # BUILD_ID=$($SCRIPTS/get_property.sh build-result/promote.properties build.id)
-            # BUILD_TYPE=$($SCRIPTS/get_build_type.sh $BUILD_ID)
-
-            DROP_DIR=$DOWNLOAD_AREA/$VERSION/$BUILD_ID
-
 
             cp git-repo/maven/org.eclipse.emf.mwe2.repository/target/repository/*.properties build-result/
 
             #
-            # STEP 1: Get property values from publisher.properties/promote.properties
+            # STEP 1: Get property values from publisher.properties/promote.properties.
+            # The values flow into remote commands executed as genie.mwe on
+            # projects-storage.eclipse.org, so validate them against strict
+            # whitelists and fail closed on anything unexpected.
             #
-            # read properties from promote.properties & publisher.properties
             VERSION=$($SCRIPTS/get_property.sh build-result/publisher.properties version)
             BUILD_ID=$($SCRIPTS/get_property.sh build-result/promote.properties build.id)
-            BUILD_TYPE=$($SCRIPTS/get_build_type.sh $BUILD_ID)
+            BUILD_TYPE=$($SCRIPTS/get_build_type.sh "$BUILD_ID")
+            if ! echo "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+              echo "ERROR: missing or malformed version: '$VERSION' - aborting publish"
+              exit 1
+            fi
+            if ! echo "$BUILD_ID" | grep -Eq '^[NSR][0-9]{12}$'; then
+              echo "ERROR: missing or malformed build id: '$BUILD_ID' - aborting publish"
+              exit 1
+            fi
+            case "$BUILD_TYPE" in
+              N|S|R) ;;
+              *) echo "ERROR: unknown build type: '$BUILD_TYPE' - aborting publish"; exit 1 ;;
+            esac
             DROP_DIR=$DOWNLOAD_AREA/$VERSION/$BUILD_ID
 
             #
             # STEP 2: move built repository to 'build-result' directory
             #
-            #cp -R git-repo/maven/org.eclipse.emf.mwe2.parent/target/apidocs/* build-result/javadoc
             mv git-repo/maven/org.eclipse.emf.mwe2.repository/target/repository build-result/p2.repository
-            mv git-repo/maven/org.eclipse.emf.mwe2.repository/target/emft-mwe-2-lang-Update-$BUILD_ID.zip build-result/downloads/
+            mv "git-repo/maven/org.eclipse.emf.mwe2.repository/target/emft-mwe-2-lang-Update-$BUILD_ID.zip" build-result/downloads/
 
             case "$BUILD_TYPE" in
               N) # Nightly
@@ -193,22 +200,22 @@ pipeline {
               R) # Release
                 REPO_TARGET_DIR=$PROJECT_STORAGE_PATH/updates/releases/$VERSION
                 # rename release version: BUILD_ID => VERSION
-                mv build-result/downloads/emft-mwe-2-lang-Update-$BUILD_ID.zip build-result/downloads/emft-mwe-2-lang-Update-$VERSION.zip
+                mv "build-result/downloads/emft-mwe-2-lang-Update-$BUILD_ID.zip" "build-result/downloads/emft-mwe-2-lang-Update-$VERSION.zip"
                 ;;
             esac
             #
             # STEP 3: make sure p2 repository exists, cleanup and copy repo to there
             #
-            ssh -x genie.mwe@projects-storage.eclipse.org mkdir -p $REPO_TARGET_DIR
-            ssh -x genie.mwe@projects-storage.eclipse.org rm -rf $REPO_TARGET_DIR/*
-            scp -r $REPO_SOURCE_DIR/* genie.mwe@projects-storage.eclipse.org:$REPO_TARGET_DIR
+            ssh -x genie.mwe@projects-storage.eclipse.org mkdir -p "$REPO_TARGET_DIR"
+            ssh -x genie.mwe@projects-storage.eclipse.org rm -rf "$REPO_TARGET_DIR"/*
+            scp -r "$REPO_SOURCE_DIR"/* genie.mwe@projects-storage.eclipse.org:"$REPO_TARGET_DIR"
 
             #
             # STEP 4: make sure that drop directory exists, cleanup and copy zipped repo to there
             #
-            ssh -x genie.mwe@projects-storage.eclipse.org mkdir -p $DROP_DIR
-            ssh -x genie.mwe@projects-storage.eclipse.org rm -rf $DROP_DIR/*
-            scp build-result/downloads/emft-mwe-*.zip genie.mwe@projects-storage.eclipse.org:$DROP_DIR/
+            ssh -x genie.mwe@projects-storage.eclipse.org mkdir -p "$DROP_DIR"
+            ssh -x genie.mwe@projects-storage.eclipse.org rm -rf "$DROP_DIR"/*
+            scp build-result/downloads/emft-mwe-*.zip genie.mwe@projects-storage.eclipse.org:"$DROP_DIR/"
 
             #
             # STEP 5: Recreate compositeArtifacts.xml & compositeContent.xml

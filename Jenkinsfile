@@ -14,7 +14,7 @@ pipeline {
     booleanParam(
       name: 'FORCE_PUBLISH',
       defaultValue: false,
-      description: 'Force publishing of build artifacts to Eclipse project storage & OSSRH? (only effective for builds of a master branch)'
+      description: 'Force publishing of build artifacts to Eclipse project storage & OSSRH? (only effective for builds of a master or maintenance branch)'
     )
   }
 
@@ -71,7 +71,13 @@ pipeline {
             def isUpstream = gitUrl ==~ /(https:\/\/|git@)github\.com[\/:]eclipse-mwe\/mwe(\.git)?\/?/
             env.IS_UPSTREAM = isUpstream ? 'true' : 'false'
             env.PUBLISH_SNAPSHOTS = (env.BRANCH_NAME == 'master' && isUpstream) ? 'true' : 'false'
-            env.PUBLISH_ALLOWED = (env.BRANCH_NAME == 'master' &&
+            // Branches allowed to publish: 'master' of any repository the job is
+            // configured with, plus maintenance branches (prefix 'maintenance',
+            // e.g. 'maintenance_2.30') for releases from a maintenance line.
+            // Release builds from any other branch are impossible by design;
+            // extend isPublishBranch if more branches must publish.
+            def isPublishBranch = env.BRANCH_NAME ==~ /master|maintenance.*/
+            env.PUBLISH_ALLOWED = (isPublishBranch &&
               (env.PUBLISH_SNAPSHOTS == 'true' || env.BUILD_RELEASE_TYPE != 'Integration' || params.FORCE_PUBLISH)) ? 'true' : 'false'
             echo "GIT_URL='${gitUrl}', BRANCH_NAME='${env.BRANCH_NAME}', IS_UPSTREAM=${env.IS_UPSTREAM} => PUBLISH_SNAPSHOTS=${env.PUBLISH_SNAPSHOTS}, PUBLISH_ALLOWED=${env.PUBLISH_ALLOWED}"
             echo "SCM URL used for the cron trigger: '${scm.userRemoteConfigs[0]?.url}'"
@@ -137,12 +143,13 @@ pipeline {
       when {
         expression {
           // PUBLISH_ALLOWED is computed in Prepare: publishing (p2, downloads,
-          // Maven Central/OSSRH) only ever happens from a 'master' branch,
-          // regardless of the repository the job is configured with (upstream,
-          // or a private fork used e.g. for security fixes that must be able to
-          // publish a release from their own 'master' before the fix is pushed
-          // to the upstream repository). The same value gates the
-          // sonatype-oss-release deployment in buildProject().
+          // Maven Central/OSSRH) only ever happens from a 'master' or
+          // 'maintenance*' branch, regardless of the repository the job is
+          // configured with (upstream, or a private fork used e.g. for security
+          // fixes that must be able to publish a release from their own 'master'
+          // before the fix is pushed to the upstream repository). Release builds
+          // from any other branch are impossible by design. The same value gates
+          // the sonatype-oss-release deployment in buildProject().
           env.PUBLISH_ALLOWED == 'true'
         }
       }

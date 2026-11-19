@@ -170,20 +170,22 @@ pipeline {
             VERSION=$($SCRIPTS/get_property.sh build-result/publisher.properties version)
             BUILD_ID=$($SCRIPTS/get_property.sh build-result/promote.properties build.id)
             BUILD_TYPE=$($SCRIPTS/get_build_type.sh "$BUILD_ID")
-            # printf, not echo below: echo may interpret backslash escapes, which can
-            # truncate the validated text on some shells. And grep matches per line,
-            # so reject embedded newlines first - otherwise a newline could smuggle
-            # a payload past the whitelist into the remote command.
-            case "$VERSION$BUILD_ID" in
-              *'
- '*) echo "ERROR: multi-line version or build id - aborting publish"; exit 1 ;;
+            # The values flow into remote commands: allow only the characters the
+            # versioning tooling can produce. This rejects newlines, backslashes,
+            # spaces and metacharacters outright, with no shell-dependent behavior
+            # (no echo, no literal newline); the exact format is verified below.
+            case "$VERSION" in
+              ''|*[!0-9A-Za-z.]*) echo "ERROR: missing or malformed version - aborting publish"; exit 1 ;;
+            esac
+            case "$BUILD_ID" in
+              ''|*[!NSR0-9]*) echo "ERROR: missing or malformed build id - aborting publish"; exit 1 ;;
             esac
             if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+([.](Beta[0-9]{12}|M[0-5]|RC[12]))?$'; then
-              echo "ERROR: missing or malformed version: '$VERSION' - aborting publish"
+              echo "ERROR: missing or malformed version - aborting publish"
               exit 1
             fi
             if ! printf '%s' "$BUILD_ID" | grep -Eq '^[NSR][0-9]{12}$'; then
-              echo "ERROR: missing or malformed build id: '$BUILD_ID' - aborting publish"
+              echo "ERROR: missing or malformed build id - aborting publish"
               exit 1
             fi
             case "$BUILD_TYPE" in

@@ -426,7 +426,13 @@ public class StandaloneSetup {
 
 	protected void registerProject(File file) {
 		try (FileInputStream stream = new FileInputStream(file)) {
-			Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(stream);
+			final DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			// .project files never carry a DTD: reject doctypes and external entities outright
+			// (prevents XXE file access / SSRF and entity-expansion DoS)
+			factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+			factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+			Document document = factory.newDocumentBuilder().parse(stream);
 			String name = document.getDocumentElement().getElementsByTagName("name").item(0).getTextContent();
 
 			URI uri = URI.createFileURI(file.getParentFile().getCanonicalPath() + File.separator);

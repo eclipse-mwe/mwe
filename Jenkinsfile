@@ -170,7 +170,7 @@ pipeline {
             VERSION=$($SCRIPTS/get_property.sh build-result/publisher.properties version)
             BUILD_ID=$($SCRIPTS/get_property.sh build-result/promote.properties build.id)
             BUILD_TYPE=$($SCRIPTS/get_build_type.sh "$BUILD_ID")
-            if ! echo "$VERSION" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+$'; then
+            if ! echo "$VERSION" | grep -Eq '^[0-9]+[.][0-9]+[.][0-9]+([.](Beta[0-9]{12}|M[0-5]|RC[12]))?$'; then
               echo "ERROR: missing or malformed version: '$VERSION' - aborting publish"
               exit 1
             fi

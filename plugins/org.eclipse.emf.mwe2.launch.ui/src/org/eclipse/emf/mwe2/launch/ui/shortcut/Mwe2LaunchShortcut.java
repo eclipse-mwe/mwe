@@ -61,8 +61,11 @@ public class Mwe2LaunchShortcut implements ILaunchShortcut {
 			final IStructuredSelection structuredSelection = (IStructuredSelection) selection;
 			final Object object = structuredSelection.getFirstElement();
 			if (object instanceof IAdaptable) {
-				currFile = (IFile) ((IAdaptable) object).getAdapter(IResource.class);
-				launch(mode);
+				final Object adapted = ((IAdaptable) object).getAdapter(IFile.class);
+				if (adapted instanceof IFile) {
+					currFile = (IFile) adapted;
+					launch(mode);
+				}
 			}
 		}
 	}
@@ -70,6 +73,10 @@ public class Mwe2LaunchShortcut implements ILaunchShortcut {
 	public void launch(final IEditorPart editor, final String mode) {
 		final IEditorInput input = editor.getEditorInput();
 		currFile = (IFile) input.getAdapter(IFile.class);
+		if (currFile == null) {
+			MessageDialog.openError(null, "Problem running workflow.", "The file is not part of a workspace project.");
+			return;
+		}
 		launch(mode);
 	}
 

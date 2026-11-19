@@ -14,7 +14,7 @@ pipeline {
     booleanParam(
       name: 'FORCE_PUBLISH',
       defaultValue: false,
-      description: 'Force publishing of build artifacts to Eclipse project storage & OSSRH?'
+      description: 'Force publishing of build artifacts to Eclipse project storage & OSSRH? (only effective for builds of a master branch)'
     )
   }
 
@@ -71,7 +71,9 @@ pipeline {
             def isUpstream = gitUrl ==~ /(https:\/\/|git@)github\.com[\/:]eclipse-mwe\/mwe(\.git)?\/?/
             env.IS_UPSTREAM = isUpstream ? 'true' : 'false'
             env.PUBLISH_SNAPSHOTS = (env.BRANCH_NAME == 'master' && isUpstream) ? 'true' : 'false'
-            echo "GIT_URL='${gitUrl}', BRANCH_NAME='${env.BRANCH_NAME}', IS_UPSTREAM=${env.IS_UPSTREAM} => PUBLISH_SNAPSHOTS=${env.PUBLISH_SNAPSHOTS}"
+            env.PUBLISH_ALLOWED = (env.BRANCH_NAME == 'master' &&
+              (env.PUBLISH_SNAPSHOTS == 'true' || env.BUILD_RELEASE_TYPE != 'Integration' || params.FORCE_PUBLISH)) ? 'true' : 'false'
+            echo "GIT_URL='${gitUrl}', BRANCH_NAME='${env.BRANCH_NAME}', IS_UPSTREAM=${env.IS_UPSTREAM} => PUBLISH_SNAPSHOTS=${env.PUBLISH_SNAPSHOTS}, PUBLISH_ALLOWED=${env.PUBLISH_ALLOWED}"
             echo "SCM URL used for the cron trigger: '${scm.userRemoteConfigs[0]?.url}'"
           }
         }
@@ -134,13 +136,14 @@ pipeline {
     stage ('Publish') {
       when {
         expression {
-          // Publishing must only ever happen from a 'master' branch, regardless of the
-          // repository the job is configured with (upstream, or a private fork used e.g.
-          // for security fixes that must be able to publish a release from their own
-          // 'master' before the fix is pushed to the upstream repository).
-          // PUBLISH_SNAPSHOTS additionally requires upstream 'master' (see Prepare).
-          env.BRANCH_NAME == 'master' &&
-            (env.PUBLISH_SNAPSHOTS == 'true' || env.BUILD_RELEASE_TYPE != 'Integration' || params.FORCE_PUBLISH)
+          // PUBLISH_ALLOWED is computed in Prepare: publishing (p2, downloads,
+          // Maven Central/OSSRH) only ever happens from a 'master' branch,
+          // regardless of the repository the job is configured with (upstream,
+          // or a private fork used e.g. for security fixes that must be able to
+          // publish a release from their own 'master' before the fix is pushed
+          // to the upstream repository). The same value gates the
+          // sonatype-oss-release deployment in buildProject().
+          env.PUBLISH_ALLOWED == 'true'
         }
       }
       steps {
@@ -304,8 +307,7 @@ def buildProject(targetPlatform, enforcedJDK = '', forceLocalDeployment = false)
       GOALS='clean deploy'
       if [ "${TARGET_PLATFORM}" == "org.eclipse.emf.mwe2.target.nightly" ]; then
         GOALS="${GOALS} -DaltDeploymentRepository=snapshot-repo::default::file:./my-local-snapshots-dir"
-      elif [ "${FORCE_LOCAL_DEPLOYMENT}" == "true" ] || \
-           { [ "${PUBLISH_SNAPSHOTS}" != "true" ] && [ "${BUILD_RELEASE_TYPE}" == "Integration" ] && [ "${FORCE_PUBLISH}" != "true" ]; }; then
+      elif [ "${FORCE_LOCAL_DEPLOYMENT}" == "true" ] || [ "${PUBLISH_ALLOWED}" != "true" ]; then
         GOALS="${GOALS} -DaltDeploymentRepository=snapshot-repo::default::file:./my-local-snapshots-dir"
       else
         GOALS="${GOALS} -Psonatype-oss-release"

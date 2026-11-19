@@ -425,8 +425,8 @@ public class StandaloneSetup {
 	}
 
 	protected void registerProject(File file) {
-		try {
-			Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(new FileInputStream(file));
+		try (FileInputStream stream = new FileInputStream(file)) {
+			Document document = DocumentBuilderFactory.newInstance().newDocumentBuilder().parse(stream);
 			String name = document.getDocumentElement().getElementsByTagName("name").item(0).getTextContent();
 
 			URI uri = URI.createFileURI(file.getParentFile().getCanonicalPath() + File.separator);

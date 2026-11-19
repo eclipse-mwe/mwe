@@ -30,6 +30,16 @@
 			<unit id="org.apache.commons.cli"/>
 			<unit id="org.apache.commons.commons-logging"/>
 			<unit id="com.google.guava"/>
+			<!-- Xtext nightly requires the io.github.classgraph package in the
+			     [5.0.0,6.0.0) range. Constrain the complete ClassGraph split-bundle
+			     set to the same range so that p2 cannot mix the 5.x main bundle with
+			     the 6.x base/classpath/vfs bundles from Orbit (the 6.x bundles export
+			     the internal packages with a mandatory "classgraph-internal" attribute,
+			     which the 5.x main bundle does not import). -->
+			<unit id="io.github.classgraph.classgraph" version="[5.0.0,6.0.0)"/>
+			<unit id="io.github.classgraph.classgraph-base" version="[5.0.0,6.0.0)"/>
+			<unit id="io.github.classgraph.classgraph-classpath" version="[5.0.0,6.0.0)"/>
+			<unit id="io.github.classgraph.classgraph-vfs" version="[5.0.0,6.0.0)"/>
 			<repository location="https://download.eclipse.org/tools/orbit/simrel/orbit-aggregation/2026-12"/>
 		</location>
 	</locations>

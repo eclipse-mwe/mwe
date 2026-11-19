@@ -14,12 +14,16 @@ pipeline {
     booleanParam(
       name: 'FORCE_PUBLISH',
       defaultValue: false,
-      description: 'Force publishing of build artifacts to Eclipse project storage & OSSRH?'
+      description: 'Force publishing of build artifacts to Eclipse project storage & OSSRH? (only effective for builds of a master or maintenance branch)'
     )
   }
 
   triggers {
-    cron(env.BRANCH_NAME == 'master' ? 'H H(0-1) * * *' : '')
+    // Nightly build only for master of the upstream repository, not for private copies
+    // of it (e.g. one used for security fixes). This runs before checkout, so the URL
+    // comes from the job's SCM configuration (same pattern as IS_UPSTREAM in Prepare).
+    // The repo check comes first so that every build evaluates it, not only master builds.
+    cron((scm.userRemoteConfigs[0]?.url ==~ /(https:\/\/|git@)github\.com[\/:]eclipse-mwe\/mwe(\.git)?\/?/) && env.BRANCH_NAME == 'master' ? 'H H(0-1) * * *' : '')
   }
 
   options {
@@ -52,8 +56,10 @@ pipeline {
       steps {
         dir ('git-repo') {
           script {
-            // On the first build of a new branch Jenkins doesn't know the parameters yet,
-            // so params.RELEASE_TYPE is empty. Never treat that as a release.
+            // On the first build of a new branch Jenkins doesn't know the job parameters yet,
+            // so the environment variable $RELEASE_TYPE is empty (params.RELEASE_TYPE gets the
+            // declarative default). Use BUILD_RELEASE_TYPE in sh steps, never $RELEASE_TYPE.
+            // The fallback is a safety net: a missing value is never treated as a release.
             env.BUILD_RELEASE_TYPE = params.RELEASE_TYPE ?: 'Integration'
             echo "RELEASE_TYPE='${params.RELEASE_TYPE}' => BUILD_RELEASE_TYPE=${env.BUILD_RELEASE_TYPE}"
             def scmVars = checkout scm
@@ -63,8 +69,18 @@ pipeline {
             // If detection fails (GIT_URL missing or unexpected), nothing is published.
             def gitUrl = scmVars.GIT_URL ?: ''
             def isUpstream = gitUrl ==~ /(https:\/\/|git@)github\.com[\/:]eclipse-mwe\/mwe(\.git)?\/?/
+            env.IS_UPSTREAM = isUpstream ? 'true' : 'false'
             env.PUBLISH_SNAPSHOTS = (env.BRANCH_NAME == 'master' && isUpstream) ? 'true' : 'false'
-            echo "GIT_URL='${gitUrl}', BRANCH_NAME='${env.BRANCH_NAME}', isUpstream=${isUpstream} => PUBLISH_SNAPSHOTS=${env.PUBLISH_SNAPSHOTS}"
+            // Branches allowed to publish: 'master' of any repository the job is
+            // configured with, plus maintenance branches (prefix 'maintenance',
+            // e.g. 'maintenance_2.30') for releases from a maintenance line.
+            // Release builds from any other branch are impossible by design;
+            // extend isPublishBranch if more branches must publish.
+            def isPublishBranch = env.BRANCH_NAME ==~ /master|maintenance.*/
+            env.PUBLISH_ALLOWED = (isPublishBranch &&
+              (env.PUBLISH_SNAPSHOTS == 'true' || env.BUILD_RELEASE_TYPE != 'Integration' || params.FORCE_PUBLISH)) ? 'true' : 'false'
+            echo "GIT_URL='${gitUrl}', BRANCH_NAME='${env.BRANCH_NAME}', IS_UPSTREAM=${env.IS_UPSTREAM} => PUBLISH_SNAPSHOTS=${env.PUBLISH_SNAPSHOTS}, PUBLISH_ALLOWED=${env.PUBLISH_ALLOWED}"
+            echo "SCM URL used for the cron trigger: '${scm.userRemoteConfigs[0]?.url}'"
           }
         }
         dir ('git-repo-nightly') {
@@ -125,7 +141,17 @@ pipeline {
 
     stage ('Publish') {
       when {
-        expression { env.PUBLISH_SNAPSHOTS == 'true' || env.BUILD_RELEASE_TYPE != 'Integration' || params.FORCE_PUBLISH }
+        expression {
+          // PUBLISH_ALLOWED is computed in Prepare: publishing (p2, downloads,
+          // Maven Central/OSSRH) only ever happens from a 'master' or
+          // 'maintenance*' branch, regardless of the repository the job is
+          // configured with (upstream, or a private fork used e.g. for security
+          // fixes that must be able to publish a release from their own 'master'
+          // before the fix is pushed to the upstream repository). Release builds
+          // from any other branch are impossible by design. The same value gates
+          // the sonatype-oss-release deployment in buildProject().
+          env.PUBLISH_ALLOWED == 'true'
+        }
       }
       steps {
         sshagent(['projects-storage.eclipse.org-bot-ssh']) {
@@ -247,7 +273,12 @@ EOF
           lastResult = currentBuild.previousBuild.result
         }
 
-        if (curResult != 'SUCCESS' || lastResult != 'SUCCESS') {
+        // Only notify the public Matrix room for builds of the upstream repository.
+        // Builds from forks (e.g. a private fork used for security fixes) must not
+        // announce job or branch names there.
+        if (env.IS_UPSTREAM != 'true') {
+          echo "IS_UPSTREAM='${env.IS_UPSTREAM}' => skipping Matrix notification"
+        } else if (curResult != 'SUCCESS' || lastResult != 'SUCCESS') {
           def color = ''
           switch (curResult) {
             case 'SUCCESS':
@@ -283,8 +314,7 @@ def buildProject(targetPlatform, enforcedJDK = '', forceLocalDeployment = false)
       GOALS='clean deploy'
       if [ "${TARGET_PLATFORM}" == "org.eclipse.emf.mwe2.target.nightly" ]; then
         GOALS="${GOALS} -DaltDeploymentRepository=snapshot-repo::default::file:./my-local-snapshots-dir"
-      elif [ "${FORCE_LOCAL_DEPLOYMENT}" == "true" ] || \
-           { [ "${PUBLISH_SNAPSHOTS}" != "true" ] && [ "${BUILD_RELEASE_TYPE}" == "Integration" ] && [ "${FORCE_PUBLISH}" != "true" ]; }; then
+      elif [ "${FORCE_LOCAL_DEPLOYMENT}" == "true" ] || [ "${PUBLISH_ALLOWED}" != "true" ]; then
         GOALS="${GOALS} -DaltDeploymentRepository=snapshot-repo::default::file:./my-local-snapshots-dir"
       else
         GOALS="${GOALS} -Psonatype-oss-release"

@@ -33,6 +33,8 @@ Performing a stable release has a few manual steps that are documented here:
 
 ### Build Locally
 
+On Windows, use `mvnw.cmd` instead of `./mvnw`. Maven is downloaded automatically on the first run, so no local Maven installation is required. The options in `.mvn/maven.config` are also applied automatically.
+
 `./mvnw -f maven/org.eclipse.emf.mwe2.parent/pom.xml -Dtycho.localArtifacts=ignore -Dmaven.repo.local=.m2/repository clean install`
 
 Build with nightly dependencies (EMF etc.)

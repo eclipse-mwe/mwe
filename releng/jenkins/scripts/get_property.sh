@@ -14,7 +14,7 @@ fi
 
 # Literal match on "name=" at the start of a line, first match wins, and keep
 # everything after the first '=' so values that themselves contain '=' survive.
-VALUE=$(awk -v key="$2" 'index($0, key "=") == 1 { print substr($0, length(key) + 2); exit }' "$1")
+VALUE=$(PROPERTY_KEY="$2" awk 'BEGIN { key = ENVIRON["PROPERTY_KEY"] } index($0, key "=") == 1 { print substr($0, length(key) + 2); exit }' < "$1")
 if [ -z "$VALUE" ]; then
     echo "Could not get property value" >&2
     exit 1

@@ -326,7 +326,7 @@ def buildProject(targetPlatform, enforcedJDK = '', forceLocalDeployment = false)
         *) BUILD_TYPE='S' ;;
       esac
 
-      mvn \
+      ./mvnw \
         -f maven/org.eclipse.emf.mwe2.parent/pom.xml \
         ${STRICT_JDK_PROFILE} \
         -Dsign.skip=false \

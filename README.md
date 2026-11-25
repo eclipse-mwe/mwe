@@ -33,10 +33,10 @@ Performing a stable release has a few manual steps that are documented here:
 
 ### Build Locally
 
-On Windows, use `mvnw.cmd` instead of `./mvnw`. Maven is downloaded automatically on the first run, so no local Maven installation is required. The options in `.mvn/maven.config` are also applied automatically.
+On Windows, use `mvnw.cmd` instead of `./mvnw`. Maven is downloaded automatically on the first run, so no local Maven installation is required. The bootstrap requires `unzip` and either `sha256sum` or `shasum`. When invoked from the repository root, options in `.mvn/maven.config` are applied automatically.
 
-`./mvnw -f maven/org.eclipse.emf.mwe2.parent/pom.xml -Dtycho.localArtifacts=ignore -Dmaven.repo.local=.m2/repository clean install`
+`./mvnw -f maven/org.eclipse.emf.mwe2.parent/pom.xml -Dmaven.repo.local=.m2/repository clean install`
 
 Build with nightly dependencies (EMF etc.)
 
-`./mvnw -f maven/org.eclipse.emf.mwe2.parent/pom.xml -Dtycho.localArtifacts=ignore -Dmaven.repo.local=.m2/repository -Dtarget-platform=org.eclipse.emf.mwe2.target.nightly clean install`
+`./mvnw -f maven/org.eclipse.emf.mwe2.parent/pom.xml -Dmaven.repo.local=.m2/repository -Dtarget-platform=org.eclipse.emf.mwe2.target.nightly clean install`

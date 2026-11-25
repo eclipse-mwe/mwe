@@ -217,14 +217,14 @@ pipeline {
             # STEP 3: make sure p2 repository exists, cleanup and copy repo to there
             #
             ssh -x genie.mwe@projects-storage.eclipse.org mkdir -p "$REPO_TARGET_DIR"
-            ssh -x genie.mwe@projects-storage.eclipse.org rm -rf "$REPO_TARGET_DIR"/*
+            ssh -x genie.mwe@projects-storage.eclipse.org rm -rf "$REPO_TARGET_DIR/*"
             scp -r "$REPO_SOURCE_DIR"/* genie.mwe@projects-storage.eclipse.org:"$REPO_TARGET_DIR"
 
             #
             # STEP 4: make sure that drop directory exists, cleanup and copy zipped repo to there
             #
             ssh -x genie.mwe@projects-storage.eclipse.org mkdir -p "$DROP_DIR"
-            ssh -x genie.mwe@projects-storage.eclipse.org rm -rf "$DROP_DIR"/*
+            ssh -x genie.mwe@projects-storage.eclipse.org rm -rf "$DROP_DIR/*"
             scp build-result/downloads/emft-mwe-*.zip genie.mwe@projects-storage.eclipse.org:"$DROP_DIR/"
 
             #
@@ -238,7 +238,7 @@ pipeline {
                 # clean up milestone, delete all except for the last 3
                 # find directories in the milestone update location, only in one level
                 # remove all except for the last 3 ones
-                ssh genie.mwe@projects-storage.eclipse.org 'find $PROJECT_STORAGE_PATH/updates/milestones/ -maxdepth 1 -mindepth 1 -type d |sort|head -n -3 | xargs rm -rf'
+                ssh genie.mwe@projects-storage.eclipse.org "find '$PROJECT_STORAGE_PATH/updates/milestones/' -maxdepth 1 -mindepth 1 -type d | sort | head -n -3 | xargs -r rm -rf"
 
                 # recreate the milestones composite repository
                 ssh genie.mwe@projects-storage.eclipse.org 'cat | /bin/bash /dev/stdin' "milestones" < $SCRIPTS/create_composite_update_site.sh;;

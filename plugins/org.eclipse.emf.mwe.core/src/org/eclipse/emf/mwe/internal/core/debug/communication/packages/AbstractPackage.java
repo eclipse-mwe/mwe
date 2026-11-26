@@ -25,7 +25,7 @@ public abstract class AbstractPackage {
 
 	public int refId;
 
-	private static int nextId = 0;
+	private static final java.util.concurrent.atomic.AtomicInteger nextId = new java.util.concurrent.atomic.AtomicInteger();
 
 	// -------------------------------------------------------------------------
 
@@ -68,11 +68,7 @@ public abstract class AbstractPackage {
 	// -------------------------------------------------------------------------
 
 	protected void setNextId() {
-		if (nextId == Integer.MAX_VALUE) {
-			nextId = 1;
-		} else {
-			id = ++nextId;
-		}
+		id = nextId.updateAndGet(current -> current == Integer.MAX_VALUE ? 1 : current + 1);
 	}
 
 }

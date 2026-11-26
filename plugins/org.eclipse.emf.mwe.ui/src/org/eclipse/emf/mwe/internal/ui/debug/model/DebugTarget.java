@@ -97,7 +97,12 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 		dmm = DebugModelManager.newDebugModelManager(this);
 		// the runtime may send events as soon as the manager is initialized
 		launch.addDebugTarget(this);
-		dmm.init(conn);
+		try {
+			dmm.init(conn);
+		} catch (RuntimeException | DebugException e) {
+			launch.removeDebugTarget(this);
+			throw e;
+		}
 
 		DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
 	}

@@ -112,7 +112,13 @@ public class CommandRuntimeHandler implements RuntimeHandler, CommandListener, P
 	}
 
 	private void listenAndDispatchCommand() throws IOException {
-		dispatch(((CommandPackage) connection.listenForPackage(CommandPackage.class)).command);
+		final CommandPackage packet = (CommandPackage) connection.listenForPackage(CommandPackage.class);
+		try {
+			dispatch(packet.command);
+		}
+		finally {
+			connection.markPackageProcessed(packet);
+		}
 	}
 
 	private void dispatch(final int cmd) {

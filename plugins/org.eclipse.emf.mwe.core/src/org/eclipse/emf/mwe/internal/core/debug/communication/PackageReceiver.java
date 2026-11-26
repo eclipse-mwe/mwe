@@ -24,6 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.AbstractPackage;
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.BreakpointPackage;
+import org.eclipse.emf.mwe.internal.core.debug.communication.packages.CommandPackage;
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.ConfirmationPackage;
 
 /**
@@ -127,7 +128,7 @@ public class PackageReceiver implements Runnable {
 	public void markPackageProcessed(final AbstractPackage packet) {
 		synchronized (receivedPackages) {
 			final Long sequence = packetSequences.get(packet);
-			if (sequence != null && packet instanceof BreakpointPackage) {
+			if (sequence != null && isOrdered(packet)) {
 				pendingBreakpointSequences.remove(sequence);
 				packetSequences.remove(packet);
 				receivedPackages.notifyAll();
@@ -167,6 +168,11 @@ public class PackageReceiver implements Runnable {
 			}
 			packetSequences.remove(packet);
 		}
+	}
+
+	// breakpoint and command packets must be handled before the startup confirmation releases the workflow
+	private static boolean isOrdered(final AbstractPackage packet) {
+		return packet instanceof BreakpointPackage || packet instanceof CommandPackage;
 	}
 
 	private boolean hasPendingBreakpointBefore(final long boundary) {
@@ -212,7 +218,7 @@ public class PackageReceiver implements Runnable {
 				continue;
 			}
 			receivedPackages.remove(packet);
-			if (!(packet instanceof BreakpointPackage) && !(packet instanceof ConfirmationPackage)) {
+			if (!isOrdered(packet) && !(packet instanceof ConfirmationPackage)) {
 				packetSequences.remove(packet);
 			}
 			return packet;
@@ -262,7 +268,7 @@ public class PackageReceiver implements Runnable {
 		synchronized (receivedPackages) {
 			final long sequence = ++nextPacketSequence;
 			packetSequences.put(packet, Long.valueOf(sequence));
-			if (packet instanceof BreakpointPackage) {
+			if (isOrdered(packet)) {
 				pendingBreakpointSequences.add(Long.valueOf(sequence));
 			}
 			receivedPackages.add(packet);

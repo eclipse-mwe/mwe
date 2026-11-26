@@ -50,6 +50,8 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 
 	private IProcess fProcess;
 
+	private final Process fSystemProcess;
+
 	private ILaunch fLaunch;
 
 	private DebugThread fThread;
@@ -60,13 +62,13 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 
 	protected boolean suspended;
 
-	public static DebugTarget newDebugTarget(final ILaunch launch, final IProcess process, final Connection conn)
-			throws CoreException {
+	public static DebugTarget newDebugTarget(final ILaunch launch, final IProcess process, final Process systemProcess,
+			final Connection conn) throws CoreException {
 		final DebugTarget[] target = new DebugTarget[1];
 		IWorkspaceRunnable r = new IWorkspaceRunnable() {
 			@Override
 			public void run(IProgressMonitor m) throws DebugException {
-				target[0] = new DebugTarget(launch, process, conn);
+				target[0] = new DebugTarget(launch, process, systemProcess, conn);
 			}
 		};
 		try {
@@ -82,11 +84,12 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 
 	private static final long TERMINATE_GRACE_PERIOD_MILLIS = 3000;
 
-	private DebugTarget(ILaunch launch, IProcess process, Connection conn) throws DebugException {
+	private DebugTarget(ILaunch launch, IProcess process, Process systemProcess, Connection conn) throws DebugException {
 		super(null);
 		fLaunch = launch;
 		target = this;
 		fProcess = process;
+		fSystemProcess = systemProcess;
 		fThread = new DebugThread(this);
 		dmm = DebugModelManager.newDebugModelManager(this);
 		// the runtime may send events as soon as the manager is initialized
@@ -290,7 +293,12 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 			protected IStatus run(final IProgressMonitor monitor) {
 				try {
 					if (!fProcess.isTerminated()) {
-						fProcess.terminate();
+						// IProcess.terminate() only requests a normal destroy, which a hung JVM can ignore
+						if (fSystemProcess != null) {
+							fSystemProcess.destroyForcibly();
+						} else {
+							fProcess.terminate();
+						}
 					}
 				} catch (DebugException e) {
 					Activator.logError(e);

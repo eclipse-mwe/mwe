@@ -121,7 +121,7 @@ public class MWEDebuggerLauncher extends AbstractVMRunner {
 				throw new DebugException(Activator.createErrorStatus(
 						"Debugger runtime process didn't respond properly --> aborting", null));
 			}
-			DebugTarget.newDebugTarget(launch, process, connection);
+			DebugTarget.newDebugTarget(launch, process, p, connection);
 		} catch (CoreException e) {
 			if (p != null) {
 				p.destroy();
@@ -137,7 +137,7 @@ public class MWEDebuggerLauncher extends AbstractVMRunner {
 		arguments.add(findJavaExecutable());
 
 		// VM arguments
-		String[] vmArgs = config.getVMArguments();
+		String[] vmArgs = combineVmArgs(config, vm);
 		if (vmArgs != null) {
 			for (String element : vmArgs) {
 				arguments.add(element);

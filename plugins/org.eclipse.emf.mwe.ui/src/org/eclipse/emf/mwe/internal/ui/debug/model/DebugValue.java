@@ -97,15 +97,15 @@ public class DebugValue extends DebugElement implements IValue {
 					for (DebugVariable var : variables) {
 						if (var.getName().equals(varTO.name)) {
 							varFound = true;
+							// every matched variable is still valid, regardless of how it is updated
+							oldVars.remove(var);
 							if (varTO.valueId == 0)
 								// update value for primitives
 								var.getValue0().setVarTO(varTO);
 							else if (var.getValue0().getVarTOId() != varTO.valueId) {
 								// update value information
 								var.setValue(varTO);
-							} else
-								// still up2date
-								oldVars.remove(var);
+							}
 							break;
 						}
 					}

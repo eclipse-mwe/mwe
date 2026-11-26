@@ -54,7 +54,7 @@ public class CommandRuntimeHandler implements RuntimeHandler, CommandListener, P
 
 	private boolean stepping = false;
 
-	private boolean forceSuspend = false;
+	private volatile boolean forceSuspend = false;
 
 	private boolean interrupt = false;
 

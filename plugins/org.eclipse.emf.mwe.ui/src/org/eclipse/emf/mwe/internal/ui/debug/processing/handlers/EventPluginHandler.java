@@ -74,6 +74,9 @@ public class EventPluginHandler implements Runnable {
 				dispatch((EventPackage) connection.listenForPackage(typeToListen));
 			}
 		} catch (Exception e) {
+			if (connection.isConnected()) {
+				Activator.logError("Debug event handling failed, closing the debugger connection", e);
+			}
 			connection.close();
 		}
 	}

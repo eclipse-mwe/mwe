@@ -45,12 +45,17 @@ public class DebugModelManager implements IDebugEventSetListener {
 
 	private BreakpointPluginHandler bpHandler;
 
-	public static DebugModelManager newDebugModelManager(final DebugTarget target, final Connection connection)
-			throws DebugException {
-		final DebugModelManager dmm = new DebugModelManager(target);
-		dmm.extensionManager = PluginExtensionManager.getDefault();
-		dmm.extensionManager.init(dmm, connection);
-		return dmm;
+	/**
+	 * Creates the manager without starting any communication, so that the target can reference it before the
+	 * runtime is able to send events.
+	 */
+	public static DebugModelManager newDebugModelManager(final DebugTarget target) {
+		return new DebugModelManager(target);
+	}
+
+	public void init(final Connection connection) throws DebugException {
+		extensionManager = PluginExtensionManager.getDefault();
+		extensionManager.init(this, connection);
 	}
 
 	private DebugModelManager(final DebugTarget target) {
@@ -152,7 +157,9 @@ public class DebugModelManager implements IDebugEventSetListener {
 	@Override
 	public void handleDebugEvents(final DebugEvent[] events) {
 		for (final DebugEvent event : events) {
-			if (event.getKind() == DebugEvent.TERMINATE) {
+			// ignore the termination of unrelated launches
+			if (event.getKind() == DebugEvent.TERMINATE
+					&& (event.getSource() == target || event.getSource() == target.getProcess())) {
 				DebugPlugin.getDefault().removeDebugEventListener(this);
 				DebugPlugin.getDefault().getBreakpointManager().removeBreakpointListener(target);
 				final DebugThread thread = getThread();

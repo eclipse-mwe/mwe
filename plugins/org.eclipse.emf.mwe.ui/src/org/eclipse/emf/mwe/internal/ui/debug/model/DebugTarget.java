@@ -74,7 +74,6 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 			Activator.showError(e.getStatus());
 			throw e;
 		}
-		launch.addDebugTarget(target[0]);
 		return target[0];
 	}
 
@@ -84,7 +83,10 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 		target = this;
 		fProcess = process;
 		fThread = new DebugThread(this);
-		dmm = DebugModelManager.newDebugModelManager(this, conn);
+		dmm = DebugModelManager.newDebugModelManager(this);
+		// the runtime may send events as soon as the manager is initialized
+		launch.addDebugTarget(this);
+		dmm.init(conn);
 
 		DebugPlugin.getDefault().getBreakpointManager().addBreakpointListener(this);
 	}

@@ -125,6 +125,9 @@ public class RuntimeHandlerManager implements Runnable {
 		if (packet.type == RegisterPackage.HANDLERS) {
 			for (String className : packet.classNames) {
 				final RuntimeHandler handler = createInstance(className, RuntimeHandler.class);
+				if (handler == null && className.startsWith(BUILT_IN_HANDLER_PACKAGE)) {
+					throw new IOException("Required debugger handler " + className + " could not be loaded");
+				}
 				if (handler != null) {
 					handler.init(monitor, connection);
 					handler.startListener();
@@ -146,6 +149,9 @@ public class RuntimeHandlerManager implements Runnable {
 		}
 	}
 
+	// the handlers of the debugger itself cannot be skipped
+	private static final String BUILT_IN_HANDLER_PACKAGE = "org.eclipse.emf.mwe.internal.core.debug.processing.handlers.";
+
 	// handlers and adapters contributed by extensions are optional: one that can't be loaded must not abort the
 	// debug session, otherwise the registration barrier would never open
 	private <T> T createInstance(final String className, final Class<T> type) {
@@ -153,6 +159,9 @@ public class RuntimeHandlerManager implements Runnable {
 			final Class<?> clazz = ResourceLoaderFactory.createResourceLoader().loadClass(className);
 			if (clazz == null) {
 				throw new ClassNotFoundException("Couldn't find " + className + " in the class path.");
+			}
+			if (!type.isAssignableFrom(clazz)) {
+				throw new ClassCastException(className + " is not a " + type.getSimpleName());
 			}
 			return type.cast(clazz.getDeclaredConstructor().newInstance());
 		}

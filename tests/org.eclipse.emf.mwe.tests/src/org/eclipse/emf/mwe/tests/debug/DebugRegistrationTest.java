@@ -55,6 +55,36 @@ public class DebugRegistrationTest extends Assert {
 	}
 
 	@Test
+	public void missingBuiltInHandlerAbortsRegistration() throws Exception {
+		final Deque<RegisterPackage> script = new ArrayDeque<RegisterPackage>();
+		final RegisterPackage handlers = new RegisterPackage();
+		handlers.type = RegisterPackage.HANDLERS;
+		handlers.classNames.add("org.eclipse.emf.mwe.internal.core.debug.processing.handlers.Missing");
+		script.add(handlers);
+
+		final RuntimeHandlerManager manager = new RuntimeHandlerManager(new DebugMonitor());
+		manager.setConnection(new Connection() {
+			@Override
+			public AbstractPackage listenForPackage(final Class<? extends AbstractPackage> type)
+					throws InterruptedIOException {
+				if (script.isEmpty()) {
+					throw new InterruptedIOException("test complete");
+				}
+				return script.poll();
+			}
+		});
+		manager.run();
+
+		try {
+			manager.awaitRegistration();
+			fail("registration must fail without a built-in handler");
+		}
+		catch (java.io.IOException expected) {
+			// expected
+		}
+	}
+
+	@Test
 	public void packetIdsAreUniqueAcrossThreads() throws Exception {
 		final int threads = 8;
 		final int perThread = 5000;

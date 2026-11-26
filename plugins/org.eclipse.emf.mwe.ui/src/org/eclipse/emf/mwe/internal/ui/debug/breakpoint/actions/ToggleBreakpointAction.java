@@ -42,6 +42,11 @@ public class ToggleBreakpointAction extends Action {
 
 	public void updateText() {
 		IResource resource = editor.getEditorInput().getAdapter(IResource.class);
+		if (resource == null) {
+			// e.g. a workflow in an archive has no workspace resource
+			setEnabled(false);
+			return;
+		}
 
 		PluginAdapter adapter = PluginExtensionManager.getDefault().getAdapterByResourceExtension(resource.getFileExtension());
 		if (adapter == null) {
@@ -69,6 +74,9 @@ public class ToggleBreakpointAction extends Action {
 
 	protected void toggleBreakpoint() throws CoreException {
 		IResource resource = editor.getEditorInput().getAdapter(IResource.class);
+		if (resource == null) {
+			return;
+		}
 
 		// Hint: doc line numbers start at 0, but markers at 1, therefore + 1
 		int line = group.getLastSelectedLine() + 1;

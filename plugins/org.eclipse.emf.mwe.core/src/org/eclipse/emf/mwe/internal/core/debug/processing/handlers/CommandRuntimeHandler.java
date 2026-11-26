@@ -52,18 +52,19 @@ public class CommandRuntimeHandler implements RuntimeHandler, CommandListener, P
 
 	// -------------------------------------------------------------------------
 
-	private boolean stepping = false;
+	private volatile boolean stepping = false;
 
 	private volatile boolean forceSuspend = false;
 
-	private boolean interrupt = false;
+	private volatile boolean interrupt = false;
 
 	private final Stack<Boolean> stackFrames = new Stack<Boolean>();
 
 	private int iterationLevel = 0;
 
-	private int suspendBaseLevel = 1;
+	private volatile int suspendBaseLevel = 1;
 
+	// guarded by syncObject
 	private boolean continueOperation = false;
 
 	private final Object[] syncObject = new Object[0];
@@ -296,24 +297,25 @@ public class CommandRuntimeHandler implements RuntimeHandler, CommandListener, P
 
 	@Override
 	public void listenCommand() {
-		if (!continueOperation) {
-			synchronized (syncObject) {
-				try {
+		synchronized (syncObject) {
+			try {
+				// check and wait under the same monitor so that a command arriving in between is not lost
+				while (!continueOperation) {
 					syncObject.wait();
 				}
-				catch (InterruptedException e) {
-					//
-				}
 			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			}
+			continueOperation = false;
 		}
-		continueOperation = false;
 	}
 
 	// set the continue flag so that the debugMonitor doesn't need to stop if
 	// the next command is already there
 	private void continueDebugger() {
-		continueOperation = true;
 		synchronized (syncObject) {
+			continueOperation = true;
 			syncObject.notifyAll();
 		}
 	}

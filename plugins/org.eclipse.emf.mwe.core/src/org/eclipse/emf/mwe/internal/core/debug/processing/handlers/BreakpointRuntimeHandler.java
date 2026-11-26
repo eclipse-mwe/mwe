@@ -49,6 +49,9 @@ public class BreakpointRuntimeHandler implements RuntimeHandler, ProcessHandler,
 
 	private final List<SyntaxElement> toBeRemovedTOs = new ArrayList<SyntaxElement>();
 
+	// guards the breakpoint lists: they are modified by the listener thread and by the workflow thread
+	private final Object lock = new Object();
+
 	// -------------------------------------------------------------------------
 
 	/**
@@ -101,15 +104,17 @@ public class BreakpointRuntimeHandler implements RuntimeHandler, ProcessHandler,
 	}
 
 	private void handle(final BreakpointPackage packet) {
-		switch (packet.type) {
-			case SET:
-				doSet(packet.se, null, 0);
-				break;
-			case REMOVE:
-				doRemove(packet.se, null, 0);
-				break;
-			default:
-				break;
+		synchronized (lock) {
+			switch (packet.type) {
+				case SET:
+					doSet(packet.se, null, 0);
+					break;
+				case REMOVE:
+					doRemove(packet.se, null, 0);
+					break;
+				default:
+					break;
+			}
 		}
 	}
 
@@ -173,23 +178,25 @@ public class BreakpointRuntimeHandler implements RuntimeHandler, ProcessHandler,
 	 */
 	@Override
 	public boolean shallSuspend(final boolean lastState, final Object element, final int flag) {
-		if (!toBeRemovedTOs.isEmpty()) {
-			List<SyntaxElement> temp = new ArrayList<SyntaxElement>();
-			temp.addAll(toBeRemovedTOs);
-			toBeRemovedTOs.clear();
-			for (SyntaxElement se : temp) {
-				doRemove(se, element, flag);
+		synchronized (lock) {
+			if (!toBeRemovedTOs.isEmpty()) {
+				List<SyntaxElement> temp = new ArrayList<SyntaxElement>();
+				temp.addAll(toBeRemovedTOs);
+				toBeRemovedTOs.clear();
+				for (SyntaxElement se : temp) {
+					doRemove(se, element, flag);
+				}
 			}
-		}
-		if (!breakpointTOs.isEmpty()) {
-			List<SyntaxElement> temp = new ArrayList<SyntaxElement>();
-			temp.addAll(breakpointTOs);
-			breakpointTOs.clear();
-			for (SyntaxElement se : temp) {
-				doSet(se, element, flag);
+			if (!breakpointTOs.isEmpty()) {
+				List<SyntaxElement> temp = new ArrayList<SyntaxElement>();
+				temp.addAll(breakpointTOs);
+				breakpointTOs.clear();
+				for (SyntaxElement se : temp) {
+					doSet(se, element, flag);
+				}
 			}
+			return lastState || breakpoints.contains(element);
 		}
-		return lastState || breakpoints.contains(element);
 	}
 
 	/**

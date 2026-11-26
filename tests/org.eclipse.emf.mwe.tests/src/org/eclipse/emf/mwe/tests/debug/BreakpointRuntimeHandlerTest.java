@@ -9,7 +9,9 @@
 package org.eclipse.emf.mwe.tests.debug;
 
 import java.io.InterruptedIOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Proxy;
+import java.util.List;
 
 import org.eclipse.emf.mwe.core.debug.model.SyntaxElement;
 import org.eclipse.emf.mwe.core.debug.processing.ElementAdapter;
@@ -32,6 +34,64 @@ public class BreakpointRuntimeHandlerTest extends Assert {
 		handler.run();
 
 		assertEquals(1, connection.processedPackets);
+	}
+
+	@Test
+	public void concurrentBreakpointUpdatesAreNotLost() throws Exception {
+		final int count = 3000;
+		final BreakpointRuntimeHandler handler = new BreakpointRuntimeHandler();
+		handler.init(new UnresolvedMonitor(), new BulkConnection(count));
+
+		final Thread listener = new Thread(handler::run);
+		final Throwable[] failure = new Throwable[1];
+		listener.start();
+		try {
+			while (listener.isAlive()) {
+				handler.shallSuspend(false, new Object(), 0);
+			}
+		}
+		catch (final Throwable t) {
+			failure[0] = t;
+		}
+		listener.join();
+		assertNull(String.valueOf(failure[0]), failure[0]);
+
+		// not resolvable yet: all breakpoints must still be pending after the last pass
+		handler.shallSuspend(false, new Object(), 0);
+		final Field pending = BreakpointRuntimeHandler.class.getDeclaredField("breakpointTOs");
+		pending.setAccessible(true);
+		assertEquals(count, ((List<?>) pending.get(handler)).size());
+	}
+
+	private static class BulkConnection extends Connection {
+		private final int count;
+		private int returned;
+
+		BulkConnection(final int count) {
+			this.count = count;
+		}
+
+		@Override
+		public AbstractPackage listenForPackage(final Class<? extends AbstractPackage> type) throws InterruptedIOException {
+			if (returned++ < count) {
+				return new BreakpointPackage(BreakpointRuntimeHandler.SET, new SyntaxElement());
+			}
+			throw new InterruptedIOException("test complete");
+		}
+
+		@Override
+		public void markPackageProcessed(final AbstractPackage packet) {
+		}
+	}
+
+	private static class UnresolvedMonitor extends DebugMonitor {
+		private final ElementAdapter adapter = (ElementAdapter) Proxy.newProxyInstance(
+				ElementAdapter.class.getClassLoader(), new Class<?>[]{ElementAdapter.class}, (proxy, method, args) -> null);
+
+		@Override
+		public ElementAdapter getAdapter(final Object element) {
+			return adapter;
+		}
 	}
 
 	private static class TestConnection extends Connection {

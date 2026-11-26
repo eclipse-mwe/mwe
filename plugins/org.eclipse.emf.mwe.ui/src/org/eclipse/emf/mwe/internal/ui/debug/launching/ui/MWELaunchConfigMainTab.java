@@ -48,9 +48,7 @@ import org.eclipse.ui.dialogs.ResourceListSelectionDialog;
 /**
  * This class defines the workflow launch config main tab. It is based on the Java one
  * <code>org.eclipse.jdt.debug.ui.launchConfigurations.JavaMainTab</code>, but shows a workflow file instead of
- * a Java class.<br>
- * There is an additional <code>javaDebugCheckbox</code> to be able to select the debug process (MWE debug or
- * Java debug)
+ * a Java class.
  * 
  */
 public class MWELaunchConfigMainTab extends JavaLaunchTab {
@@ -64,10 +62,6 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 	private Text wfText;
 
 	private Button wfButton;
-
-	private Button stopInMainCheckbox;
-
-	private Button javaDebugCheckbox;
 
 	private Path wfPath;
 
@@ -91,19 +85,16 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 
 		// Project group
 		projButton = createPushButton(parent, Messages.MWELaunchConfigMainTab_Browse, null);
-		projText = createGroup(comp, Messages.MWELaunchConfigMainTab_Project, projButton, null);
+		projText = createGroup(comp, Messages.MWELaunchConfigMainTab_Project, projButton);
 
 		createVerticalSpacer(comp, 1);
 
 		// workflow group
 		wfButton = createPushButton(parent, Messages.MWELaunchConfigMainTab_Search, null);
-		stopInMainCheckbox = createCheckButton(parent, Messages.MWELaunchConfigMainTab_StopInMain);
-		javaDebugCheckbox = createCheckButton(parent, Messages.MWELaunchConfigMainTab_JavaDebug);
-		wfText = createGroup(comp, Messages.MWELaunchConfigMainTab_initialWorkflowFile, wfButton, new Button[] { stopInMainCheckbox,
-				javaDebugCheckbox });
+		wfText = createGroup(comp, Messages.MWELaunchConfigMainTab_initialWorkflowFile, wfButton);
 	}
 
-	private Text createGroup(final Composite comp, final String title, final Button searchButton, final Button[] checkButtons) {
+	private Text createGroup(final Composite comp, final String title, final Button searchButton) {
 		Font font = comp.getFont();
 		Group group = new Group(comp, SWT.NONE);
 		group.setText(title);
@@ -118,15 +109,6 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 		text.addModifyListener(fListener);
 		searchButton.setParent(group);
 		searchButton.addSelectionListener(fListener);
-		if (checkButtons != null) {
-			for (Button button : checkButtons) {
-				button.setParent(group);
-				GridData gd = new GridData();
-				gd.horizontalSpan = 2;
-				button.setLayoutData(gd);
-				button.addSelectionListener(fListener);
-			}
-		}
 		return text;
 	}
 
@@ -145,10 +127,6 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 		try {
 			projText.setText(config.getAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME, ""));
 			setWfText(config.getAttribute(MWELaunchConfigurationConstants.ATTR_MWE_WORKFLOW_FILE, ""));
-			stopInMainCheckbox.setSelection(config.getAttribute(
-					IJavaLaunchConfigurationConstants.ATTR_STOP_IN_MAIN, false));
-			javaDebugCheckbox.setSelection(config.getAttribute(
-					MWELaunchConfigurationConstants.ATTR_MWE_JAVA_DEBUG_MODE, false));
 		} catch (CoreException e) {
 			setErrorMessage(e.getMessage());
 		}
@@ -169,10 +147,6 @@ public class MWELaunchConfigMainTab extends JavaLaunchTab {
 	public void performApply(final ILaunchConfigurationWorkingCopy config) {
 		config.setAttribute(IJavaLaunchConfigurationConstants.ATTR_PROJECT_NAME, projText.getText().trim());
 		config.setAttribute(MWELaunchConfigurationConstants.ATTR_MWE_WORKFLOW_FILE, wfPath.toString());
-		config.setAttribute(IJavaLaunchConfigurationConstants.ATTR_STOP_IN_MAIN, stopInMainCheckbox
-				.getSelection());
-		config.setAttribute(MWELaunchConfigurationConstants.ATTR_MWE_JAVA_DEBUG_MODE, javaDebugCheckbox
-				.getSelection());
 	}
 
 	@Override

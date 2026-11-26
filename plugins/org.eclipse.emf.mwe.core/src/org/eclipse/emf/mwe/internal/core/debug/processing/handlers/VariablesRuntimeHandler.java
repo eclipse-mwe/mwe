@@ -18,6 +18,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.Stack;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.eclipse.emf.mwe.core.debug.model.NameValuePair;
 import org.eclipse.emf.mwe.core.debug.processing.ElementAdapter;
 import org.eclipse.emf.mwe.core.debug.processing.EventHandler;
@@ -34,6 +36,9 @@ import org.eclipse.emf.mwe.internal.core.debug.processing.RuntimeHandler;
  * It caches variable values with it's id and handles also cleanup of this cache if values are no longer used.
  */
 public class VariablesRuntimeHandler implements RuntimeHandler, EventHandler, Runnable {
+
+	private static final Log logger = LogFactory.getLog(VariablesRuntimeHandler.class);
+
 
 	private Connection connection;
 
@@ -79,11 +84,16 @@ public class VariablesRuntimeHandler implements RuntimeHandler, EventHandler, Ru
 	}
 
 	private void handle(final RequireVarPackage packet) throws IOException {
-		List<VarValueTO> values;
-		if (packet.varId == 0) {
-			values = getFrameVariables(packet.frameId);
-		} else {
-			values = getSubVariables(packet.frameId, packet.varId);
+		List<VarValueTO> values = null;
+		try {
+			if (packet.varId == 0) {
+				values = getFrameVariables(packet.frameId);
+			} else {
+				values = getSubVariables(packet.frameId, packet.varId);
+			}
+		} catch (RuntimeException e) {
+			// always answer, otherwise the Variables view waits forever
+			logger.error("Could not collect variables", e);
 		}
 		VarDataPackage varPackage = new VarDataPackage();
 		if (values != null) {

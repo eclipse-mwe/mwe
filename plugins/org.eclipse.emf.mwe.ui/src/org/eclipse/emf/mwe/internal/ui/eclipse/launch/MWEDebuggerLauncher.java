@@ -163,9 +163,20 @@ public class MWEDebuggerLauncher extends AbstractVMRunner {
 		// programArgs
 		String[] progArgs = config.getProgramArguments();
 		boolean monitorClassArgument = false;
+		boolean afterTerminator = false;
 		for (String element : progArgs) {
 			arguments.add(element);
-			if (monitorClassArgument) {
+			if (afterTerminator) {
+				continue;
+			}
+			if ("--".equals(element)) {
+				// the generated monitor option always precedes the terminator
+				if (monitorClassArgument) {
+					arguments.add("port=" + commPort);
+					monitorClassArgument = false;
+				}
+				afterTerminator = true;
+			} else if (monitorClassArgument) {
 				arguments.add("port=" + commPort);
 				monitorClassArgument = false;
 			} else if ("-m".equals(element) || "--monitorClass".equals(element)) {

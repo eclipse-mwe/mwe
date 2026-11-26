@@ -178,8 +178,8 @@ public class WorkflowElementAdapter implements ElementAdapter {
 				Object childElement;
 				// ReflectionUtil returns a name format "[" + i + "]" for
 				// arrays, therefore we can't use name here
-				if (element instanceof Object[]) {
-					childElement = ((Object[]) element)[i++];
+				if (element.getClass().isArray()) {
+					childElement = java.lang.reflect.Array.get(element, i++);
 				}
 				else {
 					childElement = ReflectionUtil.getFieldValue(element, name);

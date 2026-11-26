@@ -11,6 +11,7 @@
  *******************************************************************************/
 package org.eclipse.emf.mwe.internal.core.debug.mwe;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,7 +52,15 @@ public class ReflectionUtil {
 	 * @return the string representation
 	 */
 	public static String getNameToString(Object element) {
-		return (element == null ? "null" : element.toString());
+		if (element == null)
+			return "null";
+		try {
+			return element.toString();
+		}
+		catch (RuntimeException e) {
+			// a failing toString of user code must not break the debugger
+			return getSimpleClassName(element) + " (toString() failed: " + e + ")";
+		}
 	}
 
 	/**
@@ -63,8 +72,8 @@ public class ReflectionUtil {
 	public static boolean checkFields(Object element) {
 		if (element == null || element instanceof String)
 			return false;
-		if (Object[].class.isAssignableFrom(element.getClass()))
-			return ((Object[]) element).length > 0;
+		if (element.getClass().isArray())
+			return Array.getLength(element) > 0;
 		Map<String, Field> fields = getFieldMap(element.getClass());
 		return !fields.isEmpty();
 	}
@@ -78,8 +87,8 @@ public class ReflectionUtil {
 	 */
 	public static List<String> getFieldNames(Object element) {
 		List<String> result = new ArrayList<String>();
-		if (element instanceof Object[])
-			for (int i = 0; i < ((Object[]) element).length; i++)
+		if (element != null && element.getClass().isArray())
+			for (int i = 0; i < Array.getLength(element); i++)
 				result.add("[" + i + "]");
 		else
 			result.addAll(getFieldMap(element.getClass()).keySet());
@@ -112,10 +121,10 @@ public class ReflectionUtil {
 
 	// similar to getClass().getSimpleName(), but handles arrays differently
 	private static String getSimpleClassName(Object element) {
+		if (element.getClass().isArray())
+			return element.getClass().getComponentType().getSimpleName() + "[" + Array.getLength(element) + "]";
 		String fqn = element.getClass().getName();
 		int index = fqn.lastIndexOf('.');
-		if (element instanceof Object[])
-			return fqn.substring(index + 1, fqn.length() - 1) + "[" + ((Object[]) element).length + "]";
 		return fqn.substring(index + 1);
 	}
 

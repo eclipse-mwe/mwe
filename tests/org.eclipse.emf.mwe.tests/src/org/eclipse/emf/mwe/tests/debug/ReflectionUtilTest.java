@@ -47,4 +47,42 @@ public class ReflectionUtilTest extends Assert {
 	public void subclassFieldWinsOverShadowedSuperclassField() {
 		assertEquals("derived", ReflectionUtil.getFieldValue(new Derived(), "shadowed"));
 	}
+
+	@Test
+	public void primitiveArraysAreInspectable() {
+		final int[] array = { 4, 5 };
+		assertTrue(ReflectionUtil.checkFields(array));
+		assertFalse(ReflectionUtil.checkFields(new int[0]));
+		assertEquals(java.util.Arrays.asList("[0]", "[1]"), ReflectionUtil.getFieldNames(array));
+		assertEquals("int[2]", ReflectionUtil.getSimpleName(array));
+		assertEquals("String[1]", ReflectionUtil.getSimpleName(new String[] { "a" }));
+	}
+
+	@Test
+	public void failingToStringDoesNotThrow() {
+		final Object bad = new Object() {
+			@Override
+			public String toString() {
+				throw new IllegalStateException("boom");
+			}
+		};
+		assertTrue(ReflectionUtil.getNameToString(bad).contains("boom"));
+	}
+
+	@Test
+	public void hugeRepresentationsAreTransferable() throws Exception {
+		final org.eclipse.emf.mwe.internal.core.debug.model.VarValueTO to = new org.eclipse.emf.mwe.internal.core.debug.model.VarValueTO(
+				"v");
+		final StringBuilder big = new StringBuilder();
+		for (int i = 0; i < 70000; i++)
+			big.append('\u00e4');
+		to.stringRep = big.toString();
+		to.simpleRep = "x";
+		final java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+		to.writeContent(new java.io.DataOutputStream(bytes));
+
+		final org.eclipse.emf.mwe.internal.core.debug.model.VarValueTO read = new org.eclipse.emf.mwe.internal.core.debug.model.VarValueTO();
+		read.readContent(new java.io.DataInputStream(new java.io.ByteArrayInputStream(bytes.toByteArray())));
+		assertTrue(read.stringRep.length() < 70000);
+	}
 }

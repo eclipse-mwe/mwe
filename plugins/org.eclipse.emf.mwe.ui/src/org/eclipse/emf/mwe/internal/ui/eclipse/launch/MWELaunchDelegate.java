@@ -167,8 +167,10 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 				throw new DebugException(Activator.createErrorStatus(
 						"The -m/--monitorClass option is reserved for MWE debugger launches: " + monitorClassOption, null));
 			}
-			progArgs.add("-m");
-			progArgs.add(DebugMonitor.class.getName());
+			// everything after "--" is positional for the command line parser, so the option has to precede it
+			final int terminator = progArgs.indexOf("--");
+			progArgs.addAll(terminator < 0 ? progArgs.size() : terminator,
+					Arrays.asList("-m", DebugMonitor.class.getName()));
 
 			String vmArgs = getVMArguments(configuration);
 
@@ -190,6 +192,9 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 
 	private String findMonitorClassOption(final List<String> arguments) {
 		for (final String argument : arguments) {
+			if ("--".equals(argument)) {
+				break;
+			}
 			if (argument.startsWith("-m")
 					|| "--monitorClass".equals(argument) || argument.startsWith("--monitorClass=")) {
 				return argument;

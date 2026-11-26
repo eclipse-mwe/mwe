@@ -107,7 +107,7 @@ public class BreakpointRuntimeHandler implements RuntimeHandler, ProcessHandler,
 		synchronized (lock) {
 			switch (packet.type) {
 				case SET:
-					doSet(packet.se, null, 0);
+					doSet(packet.se, null, 0, true);
 					break;
 				case REMOVE:
 					doRemove(packet.se, null, 0);
@@ -120,14 +120,16 @@ public class BreakpointRuntimeHandler implements RuntimeHandler, ProcessHandler,
 
 	// -------------------------------------------------------------------------
 
-	private void doSet(final SyntaxElement se, final Object actual, final int flag) {
+	private void doSet(final SyntaxElement se, final Object actual, final int flag, final boolean reconcile) {
 		ElementAdapter adapter = monitor.getAdapter(se);
 		if (adapter == null)
 			return;
 		Object element = adapter.findElement(se, actual, flag);
-		// a newer SET supersedes pending requests for the same location
-		removeMatching(toBeRemovedTOs, se);
-		removeMatching(breakpointTOs, se);
+		if (reconcile) {
+			// a newer SET supersedes pending requests for the same location
+			removeMatching(toBeRemovedTOs, se);
+			removeMatching(breakpointTOs, se);
+		}
 		// breakpoints may be set before the syntax element structure is
 		// instantiated
 		// in this case we store the SyntaxElement and try it again during
@@ -193,7 +195,8 @@ public class BreakpointRuntimeHandler implements RuntimeHandler, ProcessHandler,
 				temp.addAll(breakpointTOs);
 				breakpointTOs.clear();
 				for (SyntaxElement se : temp) {
-					doSet(se, element, flag);
+					// pending requests are already reconciled, retrying them must stay cheap
+					doSet(se, element, flag, false);
 				}
 			}
 			return lastState || breakpoints.contains(element);

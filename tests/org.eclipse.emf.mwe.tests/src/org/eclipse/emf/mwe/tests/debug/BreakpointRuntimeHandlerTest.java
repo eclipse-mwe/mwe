@@ -48,6 +48,7 @@ public class BreakpointRuntimeHandlerTest extends Assert {
 		try {
 			while (listener.isAlive()) {
 				handler.shallSuspend(false, new Object(), 0);
+				Thread.yield();
 			}
 		}
 		catch (final Throwable t) {

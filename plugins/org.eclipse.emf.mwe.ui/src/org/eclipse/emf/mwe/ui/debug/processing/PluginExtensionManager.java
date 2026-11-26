@@ -55,7 +55,7 @@ public class PluginExtensionManager {
 
 	// -------------------------------------------------------------------------
 
-	public static PluginExtensionManager getDefault() {
+	public static synchronized PluginExtensionManager getDefault() {
 		if (singleton == null) {
 			singleton = new PluginExtensionManager();
 		}
@@ -68,7 +68,7 @@ public class PluginExtensionManager {
 
 	// -------------------------------------------------------------------------
 
-	public void init(final DebugModelManager dmm, final Connection connection) throws DebugException {
+	public synchronized void init(final DebugModelManager dmm, final Connection connection) throws DebugException {
 		this.dmm = dmm;
 		this.connection = connection;
 		try {

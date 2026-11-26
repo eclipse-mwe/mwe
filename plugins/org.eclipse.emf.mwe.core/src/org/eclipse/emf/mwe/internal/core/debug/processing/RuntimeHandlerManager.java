@@ -122,39 +122,43 @@ public class RuntimeHandlerManager implements Runnable {
 
 		RegisterPackage packet = (RegisterPackage) connection.listenForPackage(RegisterPackage.class);
 
-		String msg = null;
-
 		if (packet.type == RegisterPackage.HANDLERS) {
-			RuntimeHandler handler = null;
 			for (String className : packet.classNames) {
-				final Class<?> clazz = ResourceLoaderFactory.createResourceLoader().loadClass(className);
-				if (clazz == null) {
-					msg = "Couldn't find " + className + " in the class path.";
-					System.err.println(msg);
-					throw new ClassNotFoundException(msg);
+				final RuntimeHandler handler = createInstance(className, RuntimeHandler.class);
+				if (handler != null) {
+					handler.init(monitor, connection);
+					handler.startListener();
 				}
-				handler = (RuntimeHandler) clazz.getDeclaredConstructor().newInstance();
-				handler.init(monitor, connection);
-				handler.startListener();
 			}
 		}
 		else if (packet.type == RegisterPackage.ADAPTERS) {
-			ElementAdapter adapter = null;
 			for (String className : packet.classNames) {
-				final Class<?> clazz = ResourceLoaderFactory.createResourceLoader().loadClass(className);
-				if (clazz == null) {
-					msg = "Couldn't find " + className + " in the class path.";
-					System.err.println(msg);
-					throw new ClassNotFoundException(msg);
+				final ElementAdapter adapter = createInstance(className, ElementAdapter.class);
+				if (adapter != null) {
+					monitor.addAdapter(adapter);
 				}
-				adapter = (ElementAdapter) clazz.getDeclaredConstructor().newInstance();
-				monitor.addAdapter(adapter);
 			}
 			registrationSucceeded = true;
 			registrationComplete.countDown();
 		}
 		else {
 			throw new IOException("Unknown debugger registration packet type: " + packet.type);
+		}
+	}
+
+	// handlers and adapters contributed by extensions are optional: one that can't be loaded must not abort the
+	// debug session, otherwise the registration barrier would never open
+	private <T> T createInstance(final String className, final Class<T> type) {
+		try {
+			final Class<?> clazz = ResourceLoaderFactory.createResourceLoader().loadClass(className);
+			if (clazz == null) {
+				throw new ClassNotFoundException("Couldn't find " + className + " in the class path.");
+			}
+			return type.cast(clazz.getDeclaredConstructor().newInstance());
+		}
+		catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+			logger.error("Ignoring debugger extension " + className + ": " + e, e);
+			return null;
 		}
 	}
 

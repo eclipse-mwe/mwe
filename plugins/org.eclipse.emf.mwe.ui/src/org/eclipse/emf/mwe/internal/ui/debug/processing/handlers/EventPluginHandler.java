@@ -17,6 +17,7 @@ import static org.eclipse.emf.mwe.internal.core.debug.processing.handlers.EventR
 import static org.eclipse.emf.mwe.internal.core.debug.processing.handlers.EventRuntimeHandler.TERMINATED;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
 
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.emf.mwe.internal.core.debug.communication.Connection;
@@ -74,7 +75,8 @@ public class EventPluginHandler implements Runnable {
 				dispatch((EventPackage) connection.listenForPackage(typeToListen));
 			}
 		} catch (Exception e) {
-			if (connection.isConnected()) {
+			// an interrupted receiver is the regular end of a debug session
+			if (connection.isConnected() && !(e instanceof InterruptedIOException)) {
 				Activator.logError("Debug event handling failed, closing the debugger connection", e);
 			}
 			connection.close();

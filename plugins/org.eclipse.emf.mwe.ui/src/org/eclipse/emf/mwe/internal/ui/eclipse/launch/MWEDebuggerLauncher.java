@@ -63,7 +63,8 @@ public class MWEDebuggerLauncher extends AbstractVMRunner {
 
 		// params for rumtime VM start
 		String[] cmdLine = renderCommandLine(config, commPort);
-		File workingDir = new File(config.getWorkingDirectory());
+		String workingDirectory = config.getWorkingDirectory();
+		File workingDir = workingDirectory != null ? new File(workingDirectory) : null;
 		String[] envp = config.getEnvironment();
 
 		Connection connection = new Connection();

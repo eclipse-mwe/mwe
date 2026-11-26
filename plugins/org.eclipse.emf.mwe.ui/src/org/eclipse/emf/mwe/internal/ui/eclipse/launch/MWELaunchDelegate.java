@@ -11,11 +11,11 @@
  *******************************************************************************/
 package org.eclipse.emf.mwe.internal.ui.eclipse.launch;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
-import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -39,7 +39,6 @@ import org.eclipse.emf.mwe.internal.core.debug.processing.DebugMonitor;
 import org.eclipse.emf.mwe.internal.ui.debug.model.DebugTarget;
 import org.eclipse.emf.mwe.internal.ui.debug.model.DebugThread;
 import org.eclipse.emf.mwe.internal.ui.workflow.Activator;
-import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.launching.AbstractJavaLaunchConfigurationDelegate;
 import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
 import org.eclipse.jdt.launching.IVMInstall;
@@ -155,12 +154,8 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 			String[] classpath = getClasspath(configuration);
 
 			// working dir
-			String workingDirName = null;
-			IJavaProject jp = getJavaProject(configuration);
-			if (jp != null) {
-				IProject p = jp.getProject();
-				workingDirName = p.getLocation().toFile().getAbsolutePath();
-			}
+			File workingDir = verifyWorkingDirectory(configuration);
+			String workingDirName = workingDir != null ? workingDir.getAbsolutePath() : null;
 
 			// program arguments
 			String attribute = configuration.getAttribute(

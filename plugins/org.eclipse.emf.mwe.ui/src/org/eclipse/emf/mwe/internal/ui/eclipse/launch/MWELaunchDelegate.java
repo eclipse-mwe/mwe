@@ -13,6 +13,7 @@ package org.eclipse.emf.mwe.internal.ui.eclipse.launch;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.eclipse.core.resources.IFile;
@@ -157,20 +158,10 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 			File workingDir = verifyWorkingDirectory(configuration);
 			String workingDirName = workingDir != null ? workingDir.getAbsolutePath() : null;
 
-			// program arguments
-			String attribute = configuration.getAttribute(
-					IJavaLaunchConfigurationConstants.ATTR_PROGRAM_ARGUMENTS,
-					"");
+			// program arguments (with launch variables resolved, quoted arguments kept intact)
 			List<String> progArgs = new ArrayList<String>();
 			progArgs.add(wfFileName);
-			if (!attribute.equals("")) {
-				String[] split = attribute.split("\\s");
-				for (String string : split) {
-					if ( !string.equals("")) {
-						progArgs.add(string);
-					}
-				}
-			}
+			progArgs.addAll(Arrays.asList(DebugPlugin.parseArguments(getProgramArguments(configuration))));
 			final String monitorClassOption = findMonitorClassOption(progArgs);
 			if (monitorClassOption != null) {
 				throw new DebugException(Activator.createErrorStatus(

@@ -190,23 +190,31 @@ public class DebugModelManager implements IDebugEventSetListener {
 
 	// ********************************************************* type sending
 
+	// the thread is removed when the target terminates; late commands must not fail
+	private void setStepping(final boolean stepping) {
+		final DebugThread thread = getThread();
+		if (thread != null) {
+			thread.setStepping(stepping);
+		}
+	}
+
 	public void requireStepInto() throws DebugException {
-		getThread().setStepping(true);
+		setStepping(true);
 		cmdHandler.sendStepIntoCommand();
 	}
 
 	public void requireStepOver() throws DebugException {
-		getThread().setStepping(true);
+		setStepping(true);
 		cmdHandler.sendStepOverCommand();
 	}
 
 	public void requireStepReturn() throws DebugException {
-		getThread().setStepping(true);
+		setStepping(true);
 		cmdHandler.sendStepReturnCommand();
 	}
 
 	public void requireResume() throws DebugException {
-		getThread().setStepping(false);
+		setStepping(false);
 		cmdHandler.sendResumeCommand();
 	}
 

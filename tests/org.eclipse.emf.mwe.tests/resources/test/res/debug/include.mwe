@@ -1,0 +1,3 @@
+<workflow>
+	<component file="test::res::debug::multiline"/>
+</workflow>

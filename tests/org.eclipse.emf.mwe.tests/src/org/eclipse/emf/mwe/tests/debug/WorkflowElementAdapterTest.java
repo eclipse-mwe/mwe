@@ -11,6 +11,7 @@ package org.eclipse.emf.mwe.tests.debug;
 import java.lang.reflect.Method;
 import java.util.Collections;
 
+import org.eclipse.emf.mwe.core.container.CompositeComponent;
 import org.eclipse.emf.mwe.core.issues.IssuesImpl;
 import org.eclipse.emf.mwe.internal.core.Workflow;
 import org.eclipse.emf.mwe.internal.core.ast.util.WorkflowFactory;
@@ -51,6 +52,26 @@ public class WorkflowElementAdapterTest {
 		final Object multi = adapter.findElement(se, null, 0);
 		Assert.assertSame(workflow.getComponents().get(1), multi);
 		Assert.assertEquals(3, adapter.createElement(multi).line);
+	}
+
+	@Test
+	public void includedWorkflowLocationsUseTheResourcePath() {
+		final String resource = "test/res/debug/include.mwe";
+		final String included = "test/res/debug/multiline.mwe";
+		final Workflow workflow = new WorkflowFactory().parseInitAndCreate(resource,
+				Collections.<String, String>emptyMap(), WorkflowFactory.getDefaultConverter(), new IssuesImpl());
+		final WorkflowElementAdapter adapter = new WorkflowElementAdapter();
+		final CompositeComponent include = (CompositeComponent) workflow.getComponents().get(0);
+		adapter.canHandle(include);
+
+		final SyntaxElement end = adapter.createEndElementTO(include);
+		Assert.assertEquals(included, end.resource);
+		Assert.assertEquals(7, end.line);
+
+		final SyntaxElement se = new SyntaxElement();
+		se.resource = "/project/src/" + included;
+		se.line = 3;
+		Assert.assertSame(include.getComponents().get(1), adapter.findElement(se, null, 0));
 	}
 
 	private boolean matches(final Method resourceMatches, final WorkflowElementAdapter adapter, final String requested,

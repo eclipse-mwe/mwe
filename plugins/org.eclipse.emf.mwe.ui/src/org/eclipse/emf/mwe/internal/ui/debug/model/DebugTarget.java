@@ -63,6 +63,8 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 
 	protected boolean suspended;
 
+	private final Map<IBreakpoint, SyntaxElement> installedBreakpoints = new java.util.concurrent.ConcurrentHashMap<IBreakpoint, SyntaxElement>();
+
 	public static DebugTarget newDebugTarget(final ILaunch launch, final IProcess process, final Process systemProcess,
 			final Connection conn) throws CoreException {
 		final DebugTarget[] target = new DebugTarget[1];
@@ -233,6 +235,7 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 			try {
 				if (breakpoint.isEnabled()) {
 					dmm.requireSetBreakpoint((MWEBreakpoint) breakpoint);
+					installedBreakpoints.put(breakpoint, ((MWEBreakpoint) breakpoint).createTO());
 				}
 			} catch (CoreException e) {
 				// in case connection broke
@@ -244,7 +247,14 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 	public void breakpointRemoved(final IBreakpoint breakpoint, final IMarkerDelta delta) {
 		if (supportsBreakpoint(breakpoint)) {
 			try {
-				dmm.requireRemoveBreakpoint((MWEBreakpoint) breakpoint);
+				// the marker may already be gone, so prefer the location that was sent to the runtime
+				final SyntaxElement installed = installedBreakpoints.remove(breakpoint);
+				if (installed != null) {
+					dmm.requireRemoveBreakpoint(installed);
+				} else {
+					final SyntaxElement old = ((MWEBreakpoint) breakpoint).createOldTO(delta);
+					dmm.requireRemoveBreakpoint(old != null ? old : ((MWEBreakpoint) breakpoint).createTO());
+				}
 			} catch (CoreException e) {
 				// in case connection broke
 			}
@@ -269,7 +279,8 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 
 	// the runtime knows breakpoints by location, so a moved one would otherwise stay armed at its old place
 	private void removeMovedLocation(final MWEBreakpoint breakpoint, final IMarkerDelta delta) throws CoreException {
-		final SyntaxElement oldLocation = breakpoint.createOldTO(delta);
+		final SyntaxElement installed = installedBreakpoints.get(breakpoint);
+		final SyntaxElement oldLocation = installed != null ? installed : breakpoint.createOldTO(delta);
 		final SyntaxElement newLocation = breakpoint.createTO();
 		if (oldLocation != null && !oldLocation.equalsBP(newLocation)) {
 			dmm.requireRemoveBreakpoint(oldLocation);

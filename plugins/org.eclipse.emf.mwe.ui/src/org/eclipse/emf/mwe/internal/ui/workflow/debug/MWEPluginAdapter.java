@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -137,29 +138,51 @@ public class MWEPluginAdapter implements PluginAdapter {
 
 		AbstractASTBase wfAST = factory.parseAndInitialize(wfFileName, issues, params);
 		if ((wfAST != null) && (wfAST instanceof ComponentAST)) {
-			List<AbstractASTBase> candidates = ((ComponentAST) wfAST).getChildren();
-
-			AbstractASTBase candidate = null;
-			Location loc = null;
-			for (AbstractASTBase next : candidates) {
-				loc = locationAnalyser.adapt(next.getLocation());
-				next.setLocation(loc);
-				if (loc.getLineNumber() > lineNumber) {
-					if (candidate == null) {
-						// the line precedes the first component
-						return null;
-					}
-					if (candidate instanceof ComponentAST) {
-						return (ComponentAST) candidate;
-					}
-				}
-				candidate = next;
-			}
-			if (candidate instanceof ComponentAST) {
-				return (ComponentAST) candidate;
-			}
+			return findComponentAtLine(((ComponentAST) wfAST).getChildren(), lineNumber);
 		}
 		return null;
+	}
+
+	// the candidate is the last sibling that starts at or before the line; nested components are preferred if the
+	// line is inside of that candidate
+	private ComponentAST findComponentAtLine(final List<AbstractASTBase> siblings, final int lineNumber) {
+		final Map<AbstractASTBase, Location> rawLocations = new IdentityHashMap<AbstractASTBase, Location>();
+		AbstractASTBase candidate = null;
+		for (AbstractASTBase next : siblings) {
+			final Location raw = next.getLocation();
+			final Location loc = locationAnalyser.adapt(raw);
+			rawLocations.put(next, raw);
+			next.setLocation(loc);
+			if (loc.getLineNumber() > lineNumber) {
+				if (candidate == null) {
+					// the line precedes the first component
+					return null;
+				}
+				if (candidate instanceof ComponentAST) {
+					return refine((ComponentAST) candidate, rawLocations.get(candidate), lineNumber);
+				}
+			}
+			candidate = next;
+		}
+		if (candidate instanceof ComponentAST) {
+			return refine((ComponentAST) candidate, rawLocations.get(candidate), lineNumber);
+		}
+		return null;
+	}
+
+	private ComponentAST refine(final ComponentAST component, final Location rawLocation, final int lineNumber) {
+		final List<AbstractASTBase> children = component.getChildren();
+		if (children.isEmpty() || rawLocation == null || lineNumber <= component.getLocation().getLineNumber()) {
+			return component;
+		}
+		final Location end = locationAnalyser.adaptEnd(rawLocation);
+		if (end != null && lineNumber < end.getLineNumber()) {
+			final ComponentAST nested = findComponentAtLine(children, lineNumber);
+			if (nested != null) {
+				return nested;
+			}
+		}
+		return component;
 	}
 
 	private String getElementName(final ComponentAST ast) {

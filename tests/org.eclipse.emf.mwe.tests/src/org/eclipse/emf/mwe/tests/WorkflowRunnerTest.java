@@ -109,6 +109,31 @@ public class WorkflowRunnerTest extends Assert {
 				RecordingProgressMonitor.lastArgs);
 	}
 
+	@Test public void testCmdLineProcessorWithOwnPositionalArgument() throws Exception {
+		RecordingCommandLineProcessor.lastArgs = null;
+		final String[] args = new String[]{
+				"-c", RecordingCommandLineProcessor.class.getName(),
+				"extra", "test/res/complex/aCompWithSeveralParams.mwe"};
+
+		assertTrue(new WorkflowRunner().doRun(TestWorkflowRunner.parse(args), args));
+		assertArrayEquals(new String[]{"extra"}, RecordingCommandLineProcessor.lastArgs);
+	}
+
+	@Test public void testCmdLineProcessorWithCommaSeparatedMonitorValues() throws Exception {
+		RecordingProgressMonitor.lastArgs = null;
+		RecordingCommandLineProcessor.lastArgs = null;
+		final String[] args = new String[]{
+				"-c", RecordingCommandLineProcessor.class.getName(),
+				"extra", "-m", RecordingProgressMonitor.class.getName() + ",monitor-arg",
+				"test/res/complex/aCompWithSeveralParams.mwe",
+				"-p", "s=hallo"};
+
+		assertTrue(new WorkflowRunner().doRun(TestWorkflowRunner.parse(args), args));
+		assertArrayEquals(new String[]{"extra", "-p", "s=hallo"}, RecordingCommandLineProcessor.lastArgs);
+		assertArrayEquals(new String[]{RecordingProgressMonitor.class.getName(), "monitor-arg"},
+				RecordingProgressMonitor.lastArgs);
+	}
+
 	@Test public void testMonitorOptionRequiresMonitorClass() throws Exception {
 		final String[] args = new String[]{"-m", "test/res/complex/aCompWithSeveralParams.mwe"};
 		final TestWorkflowRunner runner = new TestWorkflowRunner();

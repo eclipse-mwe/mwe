@@ -117,15 +117,20 @@ public class WorkflowRunner {
 		if (line.hasOption(CMDL)) {
 			// removed option --cmdLineProcessor
 			// the parsed command line decides what the workflow file is; a -p value like modelFile=input.mwe must not
-			final String[] positionalArgs = line.getArgs();
-			wfFile = positionalArgs.length > 0 ? positionalArgs[0] : findWorkflowFile(monitorOptValues);
+			// positional arguments may also belong to the command line processor, so the extension decides
+			wfFile = findWorkflowFile(line.getArgs());
+			boolean wfFileSkipped = false;
+			if (wfFile == null) {
+				wfFile = findWorkflowFile(monitorOptValues);
+				// it is consumed together with the other monitor values
+				wfFileSkipped = wfFile != null;
+			}
 
 			final List<String> unprocessedArgs = new ArrayList<String>();
 			final List<String> remainingMonitorValues = new ArrayList<String>();
 			if (monitorOptValues != null) {
 				remainingMonitorValues.addAll(Arrays.asList(monitorOptValues));
 			}
-			boolean wfFileSkipped = false;
 			for (int i = 0; i < args.length; i++) {
 				final String arg = args[i];
 				if (arg.equals("-" + CMDL) || arg.equals("--cmdLineProcessor")) {
@@ -133,7 +138,8 @@ public class WorkflowRunner {
 				}
 				else if (arg.equals("-" + MONITOR) || arg.equals("--monitorClass")) {
 					// skip exactly the tokens that Commons CLI assigned to the monitor option
-					while (i + 1 < args.length && remainingMonitorValues.remove(args[i + 1])) {
+					// (values may be comma separated)
+					while (i + 1 < args.length && removeValues(remainingMonitorValues, args[i + 1])) {
 						i++;
 					}
 				}
@@ -228,6 +234,17 @@ public class WorkflowRunner {
 		if (monitor instanceof DebugMonitor) {
 			((DebugMonitor) monitor).uninit();
 		}
+	}
+
+	private boolean removeValues(final List<String> values, final String token) {
+		final List<String> parts = Arrays.asList(token.split(",", -1));
+		if (!values.containsAll(parts)) {
+			return false;
+		}
+		for (final String part : parts) {
+			values.remove(part);
+		}
+		return true;
 	}
 
 	private String findWorkflowFile(final String[] args) {

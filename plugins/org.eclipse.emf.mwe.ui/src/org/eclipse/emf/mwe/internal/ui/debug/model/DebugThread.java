@@ -34,9 +34,6 @@ public class DebugThread extends DebugElement implements IThread {
 
 	private boolean fStepping = false;
 
-	// id of last frame that was used to get variables from
-	private int varFrameId;
-
 	public DebugThread(final DebugTarget target) {
 		super(target);
 	}
@@ -74,15 +71,6 @@ public class DebugThread extends DebugElement implements IThread {
 
 	public DebugStackFrame getStackFramePeek() {
 		return frames.peek();
-	}
-
-	public int getSetVarFrameId(final DebugStackFrame frame) {
-		varFrameId = frame.getFrameId();
-		return varFrameId;
-	}
-
-	public int getVarFrameId() {
-		return varFrameId;
 	}
 
 	public void clearStack(final int cleanStackLevel) {

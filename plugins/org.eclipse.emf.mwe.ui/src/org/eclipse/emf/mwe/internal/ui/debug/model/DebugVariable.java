@@ -26,10 +26,10 @@ public class DebugVariable extends DebugElement implements IVariable {
 
 	private DebugValue value;
 
-	public DebugVariable(DebugTarget target, VarValueTO varTO) {
+	public DebugVariable(DebugTarget target, VarValueTO varTO, int frameId) {
 		super(target);
 		name = varTO.name;
-		setValue(varTO);
+		setValue(varTO, frameId);
 	}
 
 	@Override
@@ -46,8 +46,8 @@ public class DebugVariable extends DebugElement implements IVariable {
 		return value;
 	}
 
-	public void setValue(VarValueTO varTO) {
-		value = target.getDebugValue(varTO);
+	public void setValue(VarValueTO varTO, int frameId) {
+		value = target.getDebugValue(varTO, frameId);
 	}
 
 	@Override

@@ -254,8 +254,7 @@ public class DebugModelManager implements IDebugEventSetListener {
 	// the workflow adapter
 	// later in the execution context the string representation may be rendered
 	// differently by another adapter
-	public List<VarValueTO> requireSubVariables(final int varId) throws DebugException {
-		final int frameId = target.getThread().getVarFrameId();
+	public List<VarValueTO> requireSubVariables(final int frameId, final int varId) throws DebugException {
 		try {
 			final List<VarValueTO> vars = varHandler.sendRequireSubVariables(frameId, varId);
 			target.updateDebugValues(vars);

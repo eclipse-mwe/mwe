@@ -61,15 +61,10 @@ public class DebugStackFrame extends DebugElement implements IStackFrame {
 	@Override
 	public synchronized IVariable[] getVariables() throws DebugException {
 		if (!variablesChecked) {
-			// Hint: we assume that when clicking a frame or opening the
-			// variables view at first this method is
-			// called. Therefore we remember the current stackFrame number in
-			// thread and use it when collecting
-			// sub variables.
-			final List<VarValueTO> vars = getDebugModelManager().requireVariables(thread.getSetVarFrameId(this));
+			final List<VarValueTO> vars = getDebugModelManager().requireVariables(getFrameId());
 			variables.clear();
 			for (final VarValueTO varTO : vars) {
-				final DebugVariable var = new DebugVariable(getDebugTarget0(), varTO);
+				final DebugVariable var = new DebugVariable(getDebugTarget0(), varTO, getFrameId());
 				variables.add(var);
 			}
 			VariableSorter.sort(variables);

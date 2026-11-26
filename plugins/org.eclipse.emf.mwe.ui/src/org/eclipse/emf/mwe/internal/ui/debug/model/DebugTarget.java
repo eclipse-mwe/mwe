@@ -138,19 +138,21 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 		return dmm;
 	}
 
-	public DebugValue getDebugValue(VarValueTO varTO) {
+	public DebugValue getDebugValue(VarValueTO varTO, int frameId) {
 		DebugValue value = null;
 		int valueId = varTO.valueId;
 
 		if (valueId == 0)
 			// don't cache primitives
-			value = new DebugValue(this, varTO);
+			value = new DebugValue(this, varTO, frameId);
 		else {
 			value = valueCache.get(valueId);
 			if (value == null) {
-				value = new DebugValue(this, varTO);
+				value = new DebugValue(this, varTO, frameId);
 				valueCache.put(valueId, value);
 			}
+			// sub variables are requested in the context of the frame that showed the value last
+			value.setFrameId(frameId);
 		}
 		return value;
 	}

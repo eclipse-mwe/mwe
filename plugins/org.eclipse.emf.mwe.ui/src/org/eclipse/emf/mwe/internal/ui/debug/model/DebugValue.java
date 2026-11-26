@@ -29,18 +29,26 @@ public class DebugValue extends DebugElement implements IValue {
 
 	private VarValueTO varTO;
 
+	// the stack frame in whose context the sub variables are collected
+	private int frameId;
+
 	private boolean dirty;
 
 	private List<DebugVariable> variables = new ArrayList<DebugVariable>();
 
 	// -------------------------------------------------------------------------
 
-	public DebugValue(DebugTarget target, VarValueTO varTO) {
+	public DebugValue(DebugTarget target, VarValueTO varTO, int frameId) {
 		super(target);
 		this.varTO = varTO;
+		this.frameId = frameId;
 	}
 
 	// -------------------------------------------------------------------------
+
+	public void setFrameId(int frameId) {
+		this.frameId = frameId;
+	}
 
 	public void setVarTO(VarValueTO varTO) {
 		this.varTO = varTO;
@@ -87,7 +95,7 @@ public class DebugValue extends DebugElement implements IValue {
 	public synchronized IVariable[] getVariables() throws DebugException {
 		if (varTO.hasMembers && variables.isEmpty() || dirty) {
 			// require variable value information from runtime process for the first time and after one step
-			List<VarValueTO> vars = getDebugModelManager().requireSubVariables(varTO.valueId);
+			List<VarValueTO> vars = getDebugModelManager().requireSubVariables(frameId, varTO.valueId);
 			if (dirty) {
 				// it's an update
 				List<DebugVariable> oldVars = new ArrayList<DebugVariable>();
@@ -104,13 +112,13 @@ public class DebugValue extends DebugElement implements IValue {
 								var.getValue0().setVarTO(varTO);
 							else if (var.getValue0().getVarTOId() != varTO.valueId) {
 								// update value information
-								var.setValue(varTO);
+								var.setValue(varTO, frameId);
 							}
 							break;
 						}
 					}
 					if (!varFound) {
-						DebugVariable var = new DebugVariable(getDebugTarget0(), varTO);
+						DebugVariable var = new DebugVariable(getDebugTarget0(), varTO, frameId);
 						variables.add(var);
 					}
 				}
@@ -120,7 +128,7 @@ public class DebugValue extends DebugElement implements IValue {
 			} else
 				// first time: create new variables
 				for (VarValueTO varTO : vars) {
-					DebugVariable var = new DebugVariable(getDebugTarget0(), varTO);
+					DebugVariable var = new DebugVariable(getDebugTarget0(), varTO, frameId);
 					variables.add(var);
 				}
 			dirty = false;

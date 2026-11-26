@@ -175,10 +175,10 @@ public class DebugModelManager implements IDebugEventSetListener {
 	private boolean shallStopInMain() {
 		try {
 			return target.getLaunch().getLaunchConfiguration().getAttribute(
-					IJavaLaunchConfigurationConstants.ATTR_STOP_IN_MAIN, true);
+					IJavaLaunchConfigurationConstants.ATTR_STOP_IN_MAIN, false);
 		}
 		catch (final CoreException e) {
-			return true;
+			return false;
 		}
 	}
 

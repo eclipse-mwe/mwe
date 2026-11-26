@@ -170,8 +170,7 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 			progArgs.add("-m");
 			progArgs.add(DebugMonitor.class.getName());
 
-			String vmArgs = configuration.getAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS,
-					(String) null);
+			String vmArgs = getVMArguments(configuration);
 
 			// bundle config
 			VMRunnerConfiguration runnerConfig = new VMRunnerConfiguration(wfRunnerClassName, classpath);

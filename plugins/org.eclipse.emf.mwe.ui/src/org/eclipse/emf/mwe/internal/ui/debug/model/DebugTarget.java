@@ -20,6 +20,9 @@ import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.debug.core.DebugException;
 import org.eclipse.debug.core.DebugPlugin;
 import org.eclipse.debug.core.ILaunch;
@@ -76,6 +79,8 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 		}
 		return target[0];
 	}
+
+	private static final long TERMINATE_GRACE_PERIOD_MILLIS = 3000;
 
 	private DebugTarget(ILaunch launch, IProcess process, Connection conn) throws DebugException {
 		super(null);
@@ -271,7 +276,30 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 
 	@Override
 	public void terminate() throws DebugException {
-		dmm.requireTerminate();
+		try {
+			dmm.requireTerminate();
+		} finally {
+			// the runtime checks the request only between tasks, so a blocked component would survive it
+			scheduleProcessKill();
+		}
+	}
+
+	private void scheduleProcessKill() {
+		final Job job = new Job("Terminate MWE debug process") {
+			@Override
+			protected IStatus run(final IProgressMonitor monitor) {
+				try {
+					if (!fProcess.isTerminated()) {
+						fProcess.terminate();
+					}
+				} catch (DebugException e) {
+					Activator.logError(e);
+				}
+				return Status.OK_STATUS;
+			}
+		};
+		job.setSystem(true);
+		job.schedule(TERMINATE_GRACE_PERIOD_MILLIS);
 	}
 
 	// ********************************************** IDisconnect implementation

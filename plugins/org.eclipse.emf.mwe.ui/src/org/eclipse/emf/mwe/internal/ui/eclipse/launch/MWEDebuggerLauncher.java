@@ -109,6 +109,10 @@ public class MWEDebuggerLauncher extends AbstractVMRunner {
 				} catch (InterruptedException e) {
 				}
 			}
+			if (monitor.isCanceled()) {
+				// the user cancelled: no error dialog and no target for this launch
+				throw new DebugException(org.eclipse.core.runtime.Status.CANCEL_STATUS);
+			}
 			Exception e = runnable.getException();
 			if ((e != null) || process.isTerminated()) {
 				if (runnable.isRunning()) {

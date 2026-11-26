@@ -71,7 +71,7 @@ public class XmlLocationAnalyser {
 		XmlFileEvaluator evaluator = new XmlFileEvaluator();
 		try (InputStream is = loader.getResourceAsStream(resource)) {
 			evaluator.evaluate(is);
-			if (is != null)
+			if (is != null && evaluator.complete)
 				repository.put(resource, evaluator);
 		}
 		catch (IOException e) {
@@ -101,6 +101,8 @@ public class XmlLocationAnalyser {
 		protected StringBuffer otherText, name, specChar;
 
 		protected boolean inTag, isClosingTag, inName, inInstruction, inComment = false;
+
+		boolean complete;
 
 		public void evaluate(final InputStream is) {
 			if (is == null)
@@ -218,8 +220,9 @@ public class XmlLocationAnalyser {
 					offset++;
 					column++;
 				}
+				complete = true;
 			} catch (IOException e) {
-				//
+				// partial results are used but not cached
 			}
 		}
 

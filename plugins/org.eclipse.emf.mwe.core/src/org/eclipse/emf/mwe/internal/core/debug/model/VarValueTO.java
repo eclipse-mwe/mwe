@@ -42,13 +42,9 @@ public class VarValueTO {
 	// -------------------------------------------------------------------------
 
 	public void writeContent(DataOutputStream out) throws IOException {
-		out.writeUTF(name);
+		out.writeUTF(limit(name == null ? "" : name));
 		out.writeInt(valueId);
 		out.writeUTF(limit(stringRep));
-		if (simpleRep == null) {
-			System.out.println("simpleRep of " + stringRep + " is null.");
-//			simpleRep = "null";
-		}
 		out.writeUTF(limit(simpleRep));
 		out.writeBoolean(hasMembers);
 	}
@@ -57,7 +53,9 @@ public class VarValueTO {
 	static final int MAX_REP_LENGTH = 20000;
 
 	private static String limit(final String value) {
-		if (value == null || value.length() <= MAX_REP_LENGTH)
+		if (value == null)
+			return "null";
+		if (value.length() <= MAX_REP_LENGTH)
 			return value;
 		return value.substring(0, MAX_REP_LENGTH) + "...";
 	}

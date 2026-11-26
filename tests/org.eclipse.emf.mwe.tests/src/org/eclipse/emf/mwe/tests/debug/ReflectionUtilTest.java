@@ -85,4 +85,17 @@ public class ReflectionUtilTest extends Assert {
 		read.readContent(new java.io.DataInputStream(new java.io.ByteArrayInputStream(bytes.toByteArray())));
 		assertTrue(read.stringRep.length() < 70000);
 	}
+
+	@Test
+	public void hugeNamesAndMissingRepresentationsAreTransferable() throws Exception {
+		final org.eclipse.emf.mwe.internal.core.debug.model.VarValueTO to = new org.eclipse.emf.mwe.internal.core.debug.model.VarValueTO(
+				new String(new char[70000]).replace('\0', 'k'));
+		final java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+		to.writeContent(new java.io.DataOutputStream(bytes));
+
+		final org.eclipse.emf.mwe.internal.core.debug.model.VarValueTO read = new org.eclipse.emf.mwe.internal.core.debug.model.VarValueTO();
+		read.readContent(new java.io.DataInputStream(new java.io.ByteArrayInputStream(bytes.toByteArray())));
+		assertTrue(read.name.length() < 70000);
+		assertEquals("null", read.simpleRep);
+	}
 }

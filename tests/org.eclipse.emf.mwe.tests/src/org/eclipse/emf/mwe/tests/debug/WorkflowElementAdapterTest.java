@@ -74,6 +74,21 @@ public class WorkflowElementAdapterTest {
 		Assert.assertSame(include.getComponents().get(1), adapter.findElement(se, null, 0));
 	}
 
+	@Test
+	public void collectionsAndMapsExposeTheirElements() {
+		final WorkflowElementAdapter adapter = new WorkflowElementAdapter();
+		final java.util.List<String> list = java.util.Arrays.asList("a", "b");
+		Assert.assertTrue(adapter.checkVariableHasMembers(list));
+		Assert.assertFalse(adapter.checkVariableHasMembers(new java.util.ArrayList<String>()));
+		Assert.assertEquals(2, adapter.getVariables(list).size());
+		Assert.assertEquals("[1]", adapter.getVariables(list).get(1).name);
+
+		final java.util.Map<String, Integer> map = java.util.Collections.singletonMap("k", 5);
+		Assert.assertTrue(adapter.checkVariableHasMembers(map));
+		Assert.assertEquals("k", adapter.getVariables(map).get(0).name);
+		Assert.assertEquals(Integer.valueOf(5), adapter.getVariables(map).get(0).value);
+	}
+
 	private boolean matches(final Method resourceMatches, final WorkflowElementAdapter adapter, final String requested,
 			final String runtime) throws Exception {
 		return (Boolean) resourceMatches.invoke(adapter, requested, runtime);

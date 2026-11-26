@@ -155,6 +155,18 @@ public class WorkflowElementAdapter implements ElementAdapter {
 				list.add(new NameValuePair(name, ctx.get(name)));
 			}
 		}
+		else if (element instanceof java.util.Collection<?>) {
+			// JDK collections hide their fields, so show the elements
+			int i = 0;
+			for (Object child : (java.util.Collection<?>) element) {
+				list.add(new NameValuePair("[" + i++ + "]", child));
+			}
+		}
+		else if (element instanceof java.util.Map<?, ?>) {
+			for (java.util.Map.Entry<?, ?> entry : ((java.util.Map<?, ?>) element).entrySet()) {
+				list.add(new NameValuePair(String.valueOf(entry.getKey()), entry.getValue()));
+			}
+		}
 		else {
 			int i = 0;
 			for (String name : ReflectionUtil.getFieldNames(element)) {
@@ -185,6 +197,10 @@ public class WorkflowElementAdapter implements ElementAdapter {
 
 	@Override
 	public boolean checkVariableHasMembers(Object element) {
+		if (element instanceof java.util.Collection<?>)
+			return !((java.util.Collection<?>) element).isEmpty();
+		if (element instanceof java.util.Map<?, ?>)
+			return !((java.util.Map<?, ?>) element).isEmpty();
 		return ReflectionUtil.checkFields(element);
 	}
 

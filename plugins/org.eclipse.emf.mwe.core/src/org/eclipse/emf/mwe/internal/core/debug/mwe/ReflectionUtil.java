@@ -138,7 +138,9 @@ public class ReflectionUtil {
 				Field[] fields = clazz.getDeclaredFields();
 				for (int i = 0; i < fields.length; i++) {
 					Field field = fields[i];
-					field.setAccessible(true);
+					// fields of JDK classes are not accessible (module encapsulation)
+					if (!field.trySetAccessible())
+						continue;
 					// super class fields are not considered if the same name was already in an inheriting class
 					if (!fieldMap.containsKey(field.getName()))
 						fieldMap.put(field.getName(), field);

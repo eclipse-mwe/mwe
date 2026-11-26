@@ -37,6 +37,13 @@ public class ReflectionUtilTest extends Assert {
 	}
 
 	@Test
+	public void jdkClassesWithEncapsulatedFieldsDoNotThrow() {
+		// must not throw InaccessibleObjectException for JDK types
+		assertNotNull(ReflectionUtil.getFieldNames(new java.util.ArrayList<String>()));
+		assertNotNull(ReflectionUtil.getFieldNames(Integer.valueOf(1)));
+	}
+
+	@Test
 	public void subclassFieldWinsOverShadowedSuperclassField() {
 		assertEquals("derived", ReflectionUtil.getFieldValue(new Derived(), "shadowed"));
 	}

@@ -28,6 +28,7 @@ import org.apache.commons.cli.ParseException;
 import org.eclipse.emf.mwe.core.monitor.ProgressMonitor;
 import org.eclipse.emf.mwe.core.monitor.ProgressMonitor2;
 import org.eclipse.emf.mwe.core.resources.ResourceLoaderFactory;
+import org.eclipse.emf.mwe.internal.core.debug.processing.DebugMonitor;
 
 /**
  * Main class to run a workflow.
@@ -80,6 +81,18 @@ public class WorkflowRunner {
 		return new WorkflowEngine().run(workFlowFile, theMonitor, theParams, externalSlotContents);
 	}
 	
+	public boolean doRun(String[] progArgs, boolean debugMode, int port) throws Exception {
+		WorkflowEngine runner = new WorkflowEngine();
+		ProgressMonitor monitor = null;
+		if (debugMode) {
+			monitor = new DebugMonitor();
+			((DebugMonitor) monitor).init(port);
+		}
+
+		Map<String, String> params = new HashMap<String, String>();
+		return runner.run(progArgs[0], monitor, params, null);
+	}
+
 	public boolean doRun(CommandLine line, String[] args) throws Exception {
 		WorkflowEngine runner = new WorkflowEngine();
 		if (line.hasOption(ENGINE)) {
@@ -149,10 +162,16 @@ public class WorkflowRunner {
 				monitor = (ProgressMonitor) clazz.getDeclaredConstructor().newInstance();
 				if (monitor instanceof ProgressMonitor2) {
 					((ProgressMonitor2)monitor).init(monitorOptValues);
+				} else if(monitor instanceof DebugMonitor) {
+					// this complication is because of an API problem.
+					// debug monitor throws an IOException and is not 
+					// compatible with ProgressMonitor2 interface.
+					((DebugMonitor)monitor).init(monitorOptValues);
 				}
 		}
 
 		// normalize wfFile name so that it can be found in the class path
+		// (necessary for debugger source lookup)
 		URL wfUrl;
 		int index = 0;
 		do {

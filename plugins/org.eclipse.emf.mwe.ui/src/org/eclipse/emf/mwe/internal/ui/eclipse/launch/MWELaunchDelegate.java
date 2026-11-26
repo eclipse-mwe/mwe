@@ -11,7 +11,11 @@
  *******************************************************************************/
 package org.eclipse.emf.mwe.internal.ui.eclipse.launch;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.eclipse.core.resources.IFile;
+import org.eclipse.core.resources.IProject;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -27,15 +31,24 @@ import org.eclipse.debug.core.ILaunch;
 import org.eclipse.debug.core.ILaunchConfiguration;
 import org.eclipse.debug.core.ILaunchConfigurationType;
 import org.eclipse.debug.core.ILaunchConfigurationWorkingCopy;
+import org.eclipse.debug.core.ILaunchManager;
 import org.eclipse.debug.core.model.RuntimeProcess;
 import org.eclipse.debug.ui.DebugUITools;
 import org.eclipse.emf.mwe.core.WorkflowRunner;
+import org.eclipse.emf.mwe.internal.core.debug.processing.DebugMonitor;
+import org.eclipse.emf.mwe.internal.ui.debug.model.DebugTarget;
+import org.eclipse.emf.mwe.internal.ui.debug.model.DebugThread;
 import org.eclipse.emf.mwe.internal.ui.workflow.Activator;
+import org.eclipse.jdt.core.IJavaProject;
 import org.eclipse.jdt.launching.AbstractJavaLaunchConfigurationDelegate;
 import org.eclipse.jdt.launching.IJavaLaunchConfigurationConstants;
+import org.eclipse.jdt.launching.IVMInstall;
+import org.eclipse.jdt.launching.JavaRuntime;
+import org.eclipse.jdt.launching.VMRunnerConfiguration;
 
 /**
- * This launch delegate redirects the workflow execution process to the JavaLaunchDelegate.
+ * This launch delegate decides in which mode to run the workflow execution process (run or debug) and redirects
+ * to the JavaLaunchDelegate or delegates to the WorkflowDebuggerLauncher.
  * 
  */
 public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
@@ -91,42 +104,96 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 
 		// register this class as listener for termination of the runtime process (see handleDebugEvents)
 		DebugPlugin.getDefault().addDebugEventListener(this);
-		// redirect to a JavaLauchDelegate; set config attributes accordingly
-		monitor.subTask("preparing Java launch...");
+		boolean javaDebug = configuration.getAttribute(MWELaunchConfigurationConstants.ATTR_MWE_JAVA_DEBUG_MODE,
+				false);
 
-		ILaunchConfigurationWorkingCopy wc = configuration.copy("JavaLaunch");
+		if (!mode.equals(ILaunchManager.DEBUG_MODE) || javaDebug) {
+			// redirect to a JavaLauchDelegate; set config attributes accordingly
+			monitor.subTask("preparing Java launch...");
 
-		try {
-			final ILaunchConfigurationType configType = getLaunchManager().getLaunchConfigurationType(
-					IJavaLaunchConfigurationConstants.ID_JAVA_APPLICATION);
-			wc = configType.newInstance(null, configuration.getName());
-		} catch (final CoreException e) {
-			throw new DebugException(Activator.createErrorStatus(
-					"Error creating launch configuration. --> aborting", e));
+			ILaunchConfigurationWorkingCopy wc = configuration.copy("JavaLaunch");
+
+			try {
+				final ILaunchConfigurationType configType = getLaunchManager().getLaunchConfigurationType(
+						IJavaLaunchConfigurationConstants.ID_JAVA_APPLICATION);
+				wc = configType.newInstance(null, configuration.getName());
+			} catch (final CoreException e) {
+				throw new DebugException(Activator.createErrorStatus(
+						"Error creating launch configuration. --> aborting", e));
+			}
+
+			wc.setAttributes(configuration.getAttributes());
+			String programArguments = configuration.getAttribute(
+					IJavaLaunchConfigurationConstants.ATTR_PROGRAM_ARGUMENTS,
+					"");
+			wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME, wfRunnerClassName);
+			wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_PROGRAM_ARGUMENTS, "\"" + wfFileName + "\" " + programArguments);
+			wc.setAttribute(IJavaLaunchConfigurationConstants.ID_JAVA_APPLICATION, "workflow - " + wfFileName);
+
+			monitor.worked(1);
+			monitor.subTask("delegating to Java launch...");
+
+			Job[] autoBuildJobs;
+			Job[] manBuildJobs;
+			do {
+				autoBuildJobs = Job.getJobManager().find(ResourcesPlugin.FAMILY_AUTO_BUILD);
+				manBuildJobs = Job.getJobManager().find(ResourcesPlugin.FAMILY_MANUAL_BUILD);
+			} while ((autoBuildJobs.length > 0) || (manBuildJobs.length > 0));
+
+			getLaunchManager().removeLaunch(launch);
+
+			DebugUITools.launch(wc, mode);
+
+		} else {
+			monitor.subTask("preparing debugger launch...");
+
+			// runner
+			IVMInstall vm = JavaRuntime.computeVMInstall(configuration);
+			MWEDebuggerLauncher launcher = new MWEDebuggerLauncher(vm);
+
+			// classpath
+			String[] classpath = getClasspath(configuration);
+
+			// working dir
+			String workingDirName = null;
+			IJavaProject jp = getJavaProject(configuration);
+			if (jp != null) {
+				IProject p = jp.getProject();
+				workingDirName = p.getLocation().toFile().getAbsolutePath();
+			}
+
+			// program arguments
+			String attribute = configuration.getAttribute(
+					IJavaLaunchConfigurationConstants.ATTR_PROGRAM_ARGUMENTS,
+					"");
+			List<String> progArgs = new ArrayList<String>();
+			progArgs.add(wfFileName);
+			progArgs.add("-m");
+			progArgs.add(DebugMonitor.class.getName());
+			if (!attribute.equals("")) {
+				String[] split = attribute.split("\\s");
+				for (String string : split) {
+					if ( !string.equals("")) {
+						progArgs.add(string);
+					}
+				}
+			}
+
+			String vmArgs = configuration.getAttribute(IJavaLaunchConfigurationConstants.ATTR_VM_ARGUMENTS,
+					(String) null);
+
+			// bundle config
+			VMRunnerConfiguration runnerConfig = new VMRunnerConfiguration(wfRunnerClassName, classpath);
+			runnerConfig.setWorkingDirectory(workingDirName);
+			runnerConfig.setProgramArguments(progArgs.toArray(new String[0]));
+			runnerConfig.setVMArguments(DebugPlugin.parseArguments(vmArgs));
+
+			monitor.worked(1);
+			monitor.subTask("launching debugger ...");
+
+			// run
+			launcher.run(runnerConfig, launch, monitor);
 		}
-
-		wc.setAttributes(configuration.getAttributes());
-		String programArguments = configuration.getAttribute(
-				IJavaLaunchConfigurationConstants.ATTR_PROGRAM_ARGUMENTS,
-				"");
-		wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_MAIN_TYPE_NAME, wfRunnerClassName);
-		wc.setAttribute(IJavaLaunchConfigurationConstants.ATTR_PROGRAM_ARGUMENTS, "\"" + wfFileName + "\" " + programArguments);
-		wc.setAttribute(IJavaLaunchConfigurationConstants.ID_JAVA_APPLICATION, "workflow - " + wfFileName);
-
-		monitor.worked(1);
-		monitor.subTask("delegating to Java launch...");
-
-		Job[] autoBuildJobs;
-		Job[] manBuildJobs;
-		do {
-			autoBuildJobs = Job.getJobManager().find(ResourcesPlugin.FAMILY_AUTO_BUILD);
-			manBuildJobs = Job.getJobManager().find(ResourcesPlugin.FAMILY_MANUAL_BUILD);
-		} while ((autoBuildJobs.length > 0) || (manBuildJobs.length > 0));
-
-		getLaunchManager().removeLaunch(launch);
-
-		DebugUITools.launch(wc, mode);
-
 		monitor.done();
 	}
 
@@ -136,7 +203,10 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 	@Override
 	public void handleDebugEvents(final DebugEvent[] events) {
 		for (DebugEvent event : events) {
-			if (event.getSource() instanceof RuntimeProcess && event.getKind() == DebugEvent.TERMINATE) {
+			if (((event.getSource() instanceof DebugTarget)
+                    || (event.getSource() instanceof DebugThread) || (event
+                    .getSource() instanceof RuntimeProcess))
+                    && event.getKind() == DebugEvent.TERMINATE) {
                 if (refreshJob.getState() != Job.WAITING) {
                     refreshJob.schedule();
                 }

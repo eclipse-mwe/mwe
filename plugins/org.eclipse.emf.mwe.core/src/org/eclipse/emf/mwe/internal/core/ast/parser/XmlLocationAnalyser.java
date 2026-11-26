@@ -26,6 +26,21 @@ public class XmlLocationAnalyser {
 
 	protected ResourceLoader loader;
 
+	private final boolean cacheEvaluations;
+
+	public XmlLocationAnalyser() {
+		this(false);
+	}
+
+	/**
+	 * @param cacheEvaluations
+	 *            evaluate every resource only once. Only appropriate if the sources do not change during the
+	 *            lifetime of the analyser (e.g. a running workflow).
+	 */
+	public XmlLocationAnalyser(boolean cacheEvaluations) {
+		this.cacheEvaluations = cacheEvaluations;
+	}
+
 	/**
 	 * the SAX parser has no exact location handling. The offset and length information are updated here. <br>
 	 * TODO: ER: add location of attributes (e.g. for error handling of not existing cartridge file)
@@ -51,7 +66,9 @@ public class XmlLocationAnalyser {
 		return repository.get(resource).findFirstLineOfTag(lineNumber);
 	}
 
-	private XmlFileEvaluator evaluateResource(String resource) {
+	private synchronized XmlFileEvaluator evaluateResource(String resource) {
+		if (cacheEvaluations && repository.containsKey(resource))
+			return repository.get(resource);
 		if (loader == null)
 			loader = ResourceLoaderFactory.createResourceLoader();
 		InputStream is = loader.getResourceAsStream(resource);

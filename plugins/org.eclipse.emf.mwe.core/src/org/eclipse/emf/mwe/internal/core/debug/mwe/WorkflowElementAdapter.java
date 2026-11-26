@@ -45,7 +45,7 @@ public class WorkflowElementAdapter implements ElementAdapter {
 	// -------------------------------------------------------------------------
 
 	public WorkflowElementAdapter() {
-		this.locationAnalyser = new XmlLocationAnalyser();
+		this.locationAnalyser = new XmlLocationAnalyser(true);
 	}
 
 	// -------------------------------------------------------------------------

@@ -87,6 +87,35 @@ public class XmlLocationAnalyserTest extends Assert {
 		evaluate("</111 22/></33 444/>", new String[] { "111", " 22", "33", " 444" });
 }
 
+	@Test public final void cachingAnalyserReadsEachResourceOnce() {
+		final int[] reads = new int[1];
+		final org.eclipse.emf.mwe.core.resources.ResourceLoader counting = (org.eclipse.emf.mwe.core.resources.ResourceLoader) java.lang.reflect.Proxy
+				.newProxyInstance(getClass().getClassLoader(),
+						new Class<?>[] { org.eclipse.emf.mwe.core.resources.ResourceLoader.class },
+						(proxy, method, args) -> {
+							reads[0]++;
+							return new java.io.ByteArrayInputStream("<a>\n<b/>\n</a>".getBytes());
+						});
+		final XmlLocationAnalyser caching = new XmlLocationAnalyser(true) {
+			{
+				loader = counting;
+			}
+		};
+		caching.adapt(new Location(2, 1, "wf.mwe"));
+		caching.adapt(new Location(3, 1, "wf.mwe"));
+		caching.adaptEnd(new Location(3, 1, "wf.mwe"));
+		Assert.assertEquals(1, reads[0]);
+
+		final XmlLocationAnalyser plain = new XmlLocationAnalyser() {
+			{
+				loader = counting;
+			}
+		};
+		plain.adapt(new Location(2, 1, "wf.mwe"));
+		plain.adapt(new Location(3, 1, "wf.mwe"));
+		Assert.assertEquals(3, reads[0]);
+	}
+
 	@Test public final void testInstruction() {
 		evaluate("<?xxx?>", new String[] { });
 		evaluate("<?111?><222>", new String[] { "222", "" });

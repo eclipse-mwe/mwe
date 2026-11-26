@@ -208,6 +208,18 @@ public class Connection {
 	}
 
 	/**
+	 * Wait for packets that were already handed over to be written to the peer.
+	 * 
+	 * @param timeoutMillis the maximum time to wait
+	 */
+	public void flush(final long timeoutMillis) {
+		final PackageSender currentSender = sender;
+		if (currentSender != null) {
+			currentSender.awaitSent(timeoutMillis);
+		}
+	}
+
+	/**
 	 * close and dispose the socket and the (possibly waiting) sender thread
 	 */
 	public synchronized void close() {

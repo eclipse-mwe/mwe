@@ -84,7 +84,12 @@ public class DebugMonitor implements ProgressMonitor {
 			connection.connect(port);
 		}
 		catch (final ConnectException e) {
+			connection.close();
 			throw new IOException("Couldn't establish connection to Debugger on port " + port);
+		}
+		catch (final IOException | RuntimeException e) {
+			connection.close();
+			throw e;
 		}
 		try {
 			final RuntimeHandlerManager handler = new RuntimeHandlerManager(this);
@@ -105,7 +110,9 @@ public class DebugMonitor implements ProgressMonitor {
 	 * Closes the connection. This releases the threads used for debugging and execution and releases memory.
 	 */
 	public void uninit() {
-	  connection.close();
+		// let the TERMINATED event reach the debugger
+		connection.flush(2000);
+		connection.close();
 	}
 
 	private int findPort(final String[] args) {

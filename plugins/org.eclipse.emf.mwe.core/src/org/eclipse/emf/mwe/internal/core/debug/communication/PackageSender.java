@@ -30,7 +30,10 @@ public class PackageSender implements Runnable {
 
 	private final Connection connection;
 
-	private boolean interrupt = false;
+	private volatile boolean interrupt = false;
+
+	// guarded by outgoingPackages: packets were taken from the queue but are not written yet
+	private boolean writing = false;
 
 	/**
 	 * create a new instance and starts the runnable in a new thread
@@ -69,6 +72,29 @@ public class PackageSender implements Runnable {
 			outgoingPackages.notifyAll();
 		}
 		return packet.getId();
+	}
+
+	/**
+	 * Wait until all queued packets have been written, e.g. before closing the connection.
+	 * 
+	 * @param timeoutMillis the maximum time to wait
+	 */
+	public void awaitSent(final long timeoutMillis) {
+		final long deadline = System.currentTimeMillis() + timeoutMillis;
+		synchronized (outgoingPackages) {
+			while ((!outgoingPackages.isEmpty() || writing) && !interrupt) {
+				final long remaining = deadline - System.currentTimeMillis();
+				if (remaining <= 0) {
+					return;
+				}
+				try {
+					outgoingPackages.wait(remaining);
+				} catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					return;
+				}
+			}
+		}
 	}
 
 	/**
@@ -113,10 +139,19 @@ public class PackageSender implements Runnable {
 			}
 			packagesToSend.addAll(outgoingPackages);
 			outgoingPackages.clear();
+			writing = !packagesToSend.isEmpty();
 		}
 
-		for (AbstractPackage packet : packagesToSend) {
-			connection.writePackage(packet);
+		try {
+			for (AbstractPackage packet : packagesToSend) {
+				connection.writePackage(packet);
+			}
+		}
+		finally {
+			synchronized (outgoingPackages) {
+				writing = false;
+				outgoingPackages.notifyAll();
+			}
 		}
 	}
 

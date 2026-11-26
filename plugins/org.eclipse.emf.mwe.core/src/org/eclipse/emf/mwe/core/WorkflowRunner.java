@@ -90,7 +90,12 @@ public class WorkflowRunner {
 		}
 
 		Map<String, String> params = new HashMap<String, String>();
-		return runner.run(progArgs[0], monitor, params, null);
+		try {
+			return runner.run(progArgs[0], monitor, params, null);
+		}
+		finally {
+			closeDebugMonitor(monitor);
+		}
 	}
 
 	public boolean doRun(CommandLine line, String[] args) throws Exception {
@@ -212,7 +217,18 @@ public class WorkflowRunner {
 				throw new IllegalStateException(msg);
 		}
 
-		return runner.run(wfFile, monitor, params, null);
+		try {
+			return runner.run(wfFile, monitor, params, null);
+		}
+		finally {
+			closeDebugMonitor(monitor);
+		}
+	}
+
+	private void closeDebugMonitor(final ProgressMonitor monitor) {
+		if (monitor instanceof DebugMonitor) {
+			((DebugMonitor) monitor).uninit();
+		}
 	}
 
 	private String findWorkflowFile(final String[] args) {

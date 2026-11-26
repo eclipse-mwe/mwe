@@ -56,6 +56,48 @@ public class ConnectionTest extends Assert {
 		}
 	}
 
+	@Test
+	public void flushDeliversQueuedPacketsBeforeClose() throws Exception {
+		final int port;
+		try (ServerSocket probe = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
+			port = probe.getLocalPort();
+		}
+		final Connection server = new Connection();
+		server.startListeningSocket(port);
+		final AtomicReference<Throwable> failure = new AtomicReference<Throwable>();
+		final Thread acceptor = new Thread(() -> {
+			try {
+				server.accept(10000);
+			} catch (final Throwable t) {
+				failure.set(t);
+			}
+		});
+		acceptor.start();
+
+		final Connection client = new Connection();
+		try {
+			client.connect(port);
+			acceptor.join(10000);
+			assertNull(String.valueOf(failure.get()), failure.get());
+
+			final int count = 200;
+			for (int i = 0; i < count; i++) {
+				client.sendPackage(new org.eclipse.emf.mwe.internal.core.debug.communication.packages.RequireVarPackage(i, 0));
+			}
+			client.flush(5000);
+			client.close();
+
+			for (int i = 0; i < count; i++) {
+				final org.eclipse.emf.mwe.internal.core.debug.communication.packages.RequireVarPackage received = (org.eclipse.emf.mwe.internal.core.debug.communication.packages.RequireVarPackage) server
+						.listenForPackage(org.eclipse.emf.mwe.internal.core.debug.communication.packages.RequireVarPackage.class);
+				assertEquals(i, received.frameId);
+			}
+		} finally {
+			client.close();
+			server.close();
+		}
+	}
+
 	private static void serveHandshake(final ServerSocket serverSocket, final AtomicReference<Throwable> failure) {
 		try (Socket socket = serverSocket.accept();
 				DataInputStream in = new DataInputStream(socket.getInputStream());

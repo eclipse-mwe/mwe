@@ -9,8 +9,13 @@
 package org.eclipse.emf.mwe.tests.debug;
 
 import java.lang.reflect.Method;
+import java.util.Collections;
 
+import org.eclipse.emf.mwe.core.issues.IssuesImpl;
+import org.eclipse.emf.mwe.internal.core.Workflow;
+import org.eclipse.emf.mwe.internal.core.ast.util.WorkflowFactory;
 import org.eclipse.emf.mwe.internal.core.debug.mwe.WorkflowElementAdapter;
+import org.eclipse.emf.mwe.core.debug.model.SyntaxElement;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -27,6 +32,25 @@ public class WorkflowElementAdapterTest {
 		Assert.assertTrue(matches(resourceMatches, adapter, "demo.mwe", "/xxxxx/demo.mwe"));
 		Assert.assertFalse(matches(resourceMatches, adapter, "/xxxxx/mydemo.mwe", "demo.mwe"));
 		Assert.assertFalse(matches(resourceMatches, adapter, "myworkflow.mwe", "workflow.mwe"));
+	}
+
+	@Test
+	public void breakpointOnFirstLineOfMultiLineTagIsFound() {
+		final String resource = "test/res/debug/multiline.mwe";
+		final Workflow workflow = new WorkflowFactory().parseInitAndCreate(resource,
+				Collections.<String, String>emptyMap(), WorkflowFactory.getDefaultConverter(), new IssuesImpl());
+		final WorkflowElementAdapter adapter = new WorkflowElementAdapter();
+		adapter.canHandle(workflow.getComponents().get(0));
+
+		final SyntaxElement se = new SyntaxElement();
+		se.resource = resource;
+		se.line = 2;
+		Assert.assertSame(workflow.getComponents().get(0), adapter.findElement(se, null, 0));
+
+		se.line = 3;
+		final Object multi = adapter.findElement(se, null, 0);
+		Assert.assertSame(workflow.getComponents().get(1), multi);
+		Assert.assertEquals(3, adapter.createElement(multi).line);
 	}
 
 	private boolean matches(final Method resourceMatches, final WorkflowElementAdapter adapter, final String requested,

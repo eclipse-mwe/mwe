@@ -202,7 +202,7 @@ public class WorkflowElementAdapter implements ElementAdapter {
 		}
 		if (loc != null && resourceMatches(resource, loc.getResource())) {
 			for (WorkflowComponent comp : parent.getComponents())
-				if (comp.getLocation() != null && comp.getLocation().getLineNumber() == lineNo)
+				if (lineOf(comp) == lineNo)
 					return comp;
 		}
 		for (WorkflowComponent comp : parent.getComponents())
@@ -213,6 +213,12 @@ public class WorkflowElementAdapter implements ElementAdapter {
 					return found;
 			}
 		return null;
+	}
+
+	// SAX reports the last line of a multi-line start tag; the editor and createElement use its first line
+	private int lineOf(WorkflowComponent comp) {
+		Location loc = initialize(comp.getLocation());
+		return loc != null ? loc.getLineNumber() : -1;
 	}
 
 	private boolean resourceMatches(String requestedResource, String runtimeResource) {

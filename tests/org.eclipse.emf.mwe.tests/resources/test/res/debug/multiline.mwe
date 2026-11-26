@@ -1,0 +1,7 @@
+<workflow>
+	<component class="org.eclipse.emf.mwe.tests.debug.NoopComponent" id="single" a="x"/>
+	<component class="org.eclipse.emf.mwe.tests.debug.NoopComponent" id="multi"
+		a="x"
+		b="y">
+	</component>
+</workflow>

@@ -27,6 +27,7 @@ public class JarEntryEditorInput extends org.eclipse.jdt.internal.ui.javaeditor.
 
 	public JarEntryEditorInput(final IStorage jarEntryFile) {
 		super(jarEntryFile);
+		this.fJarEntryFile = jarEntryFile;
 	}
 
 	public String getFullPath() {

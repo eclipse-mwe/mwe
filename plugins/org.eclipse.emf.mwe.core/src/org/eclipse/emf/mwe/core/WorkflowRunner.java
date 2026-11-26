@@ -14,6 +14,7 @@ package org.eclipse.emf.mwe.core;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -115,35 +116,33 @@ public class WorkflowRunner {
 
 		if (line.hasOption(CMDL)) {
 			// removed option --cmdLineProcessor
+			// the parsed command line decides what the workflow file is; a -p value like modelFile=input.mwe must not
+			final String[] positionalArgs = line.getArgs();
+			wfFile = positionalArgs.length > 0 ? positionalArgs[0] : findWorkflowFile(monitorOptValues);
+
 			final List<String> unprocessedArgs = new ArrayList<String>();
+			final List<String> remainingMonitorValues = new ArrayList<String>();
+			if (monitorOptValues != null) {
+				remainingMonitorValues.addAll(Arrays.asList(monitorOptValues));
+			}
+			boolean wfFileSkipped = false;
 			for (int i = 0; i < args.length; i++) {
 				final String arg = args[i];
 				if (arg.equals("-" + CMDL) || arg.equals("--cmdLineProcessor")) {
 					i++; // ignore this and next element
 				}
 				else if (arg.equals("-" + MONITOR) || arg.equals("--monitorClass")) {
-					// hasArgs() consumes all following non-option tokens. The parsed
-					// values are aggregated across all monitor options, so their length
-					// cannot be used as an index into the raw argument array.
-					i++;
-					while (i < args.length && !args[i].startsWith("-")) {
+					// skip exactly the tokens that Commons CLI assigned to the monitor option
+					while (i + 1 < args.length && remainingMonitorValues.remove(args[i + 1])) {
 						i++;
 					}
-					i--;
 				}
-				else if (arg.endsWith(".oaw") || arg.endsWith(".mwe")) {
-					if (wfFile != null) {
-						throw new IllegalStateException("Workflow file already defined as '" + wfFile + "'!");
-					}
-					wfFile = arg;
-					// continue the loop (will be handled later)
+				else if (!wfFileSkipped && arg.equals(wfFile)) {
+					wfFileSkipped = true;
 				}
 				else {
 					unprocessedArgs.add(arg);
 				}
-			}
-			if (wfFile == null) {
-				wfFile = findWorkflowFile(monitorOptValues);
 			}
 
 			final Class<?> cmdLineProcessor = ResourceLoaderFactory.createResourceLoader().loadClass(

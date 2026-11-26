@@ -116,6 +116,20 @@ public class XmlLocationAnalyserTest extends Assert {
 		Assert.assertEquals(3, reads[0]);
 	}
 
+	@Test public final void adaptEndSkipsNestedTagsWithTheSameName() {
+		final XmlLocationAnalyser analyser = new XmlLocationAnalyser() {
+			{
+				loader = (org.eclipse.emf.mwe.core.resources.ResourceLoader) java.lang.reflect.Proxy.newProxyInstance(
+						getClass().getClassLoader(),
+						new Class<?>[] { org.eclipse.emf.mwe.core.resources.ResourceLoader.class },
+						(proxy, method, args) -> new java.io.ByteArrayInputStream(
+								"<a>\n<a>\n</a>\n<a/>\n</a>".getBytes()));
+			}
+		};
+		assertEquals(5, analyser.adaptEnd(new Location(1, 1, "wf.mwe")).getLineNumber());
+		assertEquals(3, analyser.adaptEnd(new Location(2, 1, "wf.mwe")).getLineNumber());
+	}
+
 	@Test public final void testInstruction() {
 		evaluate("<?xxx?>", new String[] { });
 		evaluate("<?111?><222>", new String[] { "222", "" });

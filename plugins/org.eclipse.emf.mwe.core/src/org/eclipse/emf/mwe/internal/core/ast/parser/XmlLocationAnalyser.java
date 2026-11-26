@@ -60,10 +60,7 @@ public class XmlLocationAnalyser {
 	}
 
 	public int findFirstLineOfTag(String resource, int lineNumber) {
-		if (!repository.containsKey(resource)) {
-			evaluateResource(resource);
-		}
-		return repository.get(resource).findFirstLineOfTag(lineNumber);
+		return evaluateResource(resource).findFirstLineOfTag(lineNumber);
 	}
 
 	private synchronized XmlFileEvaluator evaluateResource(String resource) {
@@ -71,10 +68,15 @@ public class XmlLocationAnalyser {
 			return repository.get(resource);
 		if (loader == null)
 			loader = ResourceLoaderFactory.createResourceLoader();
-		InputStream is = loader.getResourceAsStream(resource);
 		XmlFileEvaluator evaluator = new XmlFileEvaluator();
-		evaluator.evaluate(is);
-		repository.put(resource, evaluator);
+		try (InputStream is = loader.getResourceAsStream(resource)) {
+			evaluator.evaluate(is);
+			if (is != null)
+				repository.put(resource, evaluator);
+		}
+		catch (IOException e) {
+			// nothing to close or read
+		}
 		return evaluator;
 	}
 
@@ -133,6 +135,7 @@ public class XmlLocationAnalyser {
 							value.endColumn = column + 1;
 							value.name = name.toString();
 							value.isClosingTag = isClosingTag;
+							value.isSelfClosing = !isClosingTag && specChar.toString().endsWith("/");
 							values.add(value);
 
 							result.add(new Object[] { new String[] { name.toString(), otherText.toString() }, value });
@@ -262,17 +265,30 @@ public class XmlLocationAnalyser {
 			int line = rawLoc.getLineNumber();
 			int col = rawLoc.getColumnNumber();
 			String name1 = null;
+			int depth = 0;
 			XmlTagValues potentialValue = null;
 			for (XmlTagValues value : values) {
-				if (name1 == null && line == value.firstLineOfTag && col >= value.firstColumn && col <= value.endColumn)
+				boolean isStartTag = false;
+				if (name1 == null && line == value.firstLineOfTag && col >= value.firstColumn && col <= value.endColumn) {
 					name1 = value.name;
+					isStartTag = true;
+				}
 				if (name1 == null && line < value.firstLineOfTag && potentialValue != null)
 					name1 = potentialValue.name;
-				else if (value.name.equals(name1) && value.isClosingTag) {
-					Location loc = new Location(value.firstLineOfTag, 0, rawLoc.getResource());
-					loc.setNameStart(value.nameStart);
-					loc.setNameEnd(value.nameEnd);
-					return loc;
+				if (name1 != null && !isStartTag && value.name.equals(name1)) {
+					// same-named tags nested inside of the element must not end it
+					if (!value.isClosingTag) {
+						if (!value.isSelfClosing)
+							depth++;
+					}
+					else if (depth > 0)
+						depth--;
+					else {
+						Location loc = new Location(value.firstLineOfTag, 0, rawLoc.getResource());
+						loc.setNameStart(value.nameStart);
+						loc.setNameEnd(value.nameEnd);
+						return loc;
+					}
 				}
 				potentialValue = value;
 			}
@@ -344,6 +360,8 @@ public class XmlLocationAnalyser {
 		int endColumn;
 
 		boolean isClosingTag;
+
+		boolean isSelfClosing;
 
 		String name;
 	}

@@ -145,6 +145,10 @@ public class MWEPluginAdapter implements PluginAdapter {
 				loc = locationAnalyser.adapt(next.getLocation());
 				next.setLocation(loc);
 				if (loc.getLineNumber() > lineNumber) {
+					if (candidate == null) {
+						// the line precedes the first component
+						return null;
+					}
 					if (candidate instanceof ComponentAST) {
 						return (ComponentAST) candidate;
 					}

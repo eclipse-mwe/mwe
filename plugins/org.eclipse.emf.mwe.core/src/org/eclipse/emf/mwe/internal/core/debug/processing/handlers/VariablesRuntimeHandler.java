@@ -103,15 +103,26 @@ public class VariablesRuntimeHandler implements RuntimeHandler, EventHandler, Ru
 		connection.sendPackage(varPackage);
 	}
 
+	// requests are handled by another thread than the one that pushes and pops frames; check and read must not
+	// be interleaved with those changes
+	private Frame frameAt(final int frameId) {
+		synchronized (filteredStackFrames) {
+			if (frameId < 0 || frameId >= filteredStackFrames.size()) {
+				return null;
+			}
+			return filteredStackFrames.get(frameId);
+		}
+	}
+
 	// In case there is no varId in the request the top level variables will be collected.
 	// It depends on the element adapter, which variables will be reported.
 	// The syntaxElement is also registered in the frameCache to find out later if variable values are still in
 	// use.
 	private List<VarValueTO> getFrameVariables(final int frameId) {
-		if (frameId >= filteredStackFrames.size()) {
+		Frame frame = frameAt(frameId);
+		if (frame == null) {
 			return null;
 		}
-		Frame frame = filteredStackFrames.get(frameId);
 		ElementAdapter adapter = monitor.getAdapter(frame.element);
 		adapter.setContext(frame.context);
 		cleanFramesCache();
@@ -127,10 +138,10 @@ public class VariablesRuntimeHandler implements RuntimeHandler, EventHandler, Ru
 	// The adapter that suits for the element will be used. That means that there can be different variables
 	// delivered because of different adapters for two frames although the underlying java elements are the same.
 	private List<VarValueTO> getSubVariables(final int frameId, final int varId) {
-		if (filteredStackFrames.size() <= frameId) {
+		Frame frame = frameAt(frameId);
+		if (frame == null) {
 			return null;
 		}
-		Frame frame = filteredStackFrames.get(frameId);
 		ElementAdapter adapter = monitor.getAdapter(frame.element);
 		adapter.setContext(frame.context);
 		VarValue value = findVarValueById(varId);

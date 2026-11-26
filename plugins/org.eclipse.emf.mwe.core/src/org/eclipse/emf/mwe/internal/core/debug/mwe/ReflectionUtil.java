@@ -135,7 +135,7 @@ public class ReflectionUtil {
 			final Map<String, Field> fieldMap = new HashMap<String, Field>();
 			Class<?> clazz = cls;
 			while (!Object.class.equals(clazz)) {
-				Field[] fields = cls.getDeclaredFields();
+				Field[] fields = clazz.getDeclaredFields();
 				for (int i = 0; i < fields.length; i++) {
 					Field field = fields[i];
 					field.setAccessible(true);

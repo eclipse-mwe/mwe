@@ -103,10 +103,14 @@ public class DebugModelManager implements IDebugEventSetListener {
 	}
 
 	public void adaptStackFrames(final int cleanStackLevel, final List<SyntaxElement> frames) {
-		getThread().clearStack(cleanStackLevel);
-		getThread().pushStackFrames(frames);
+		final DebugThread thread = getThread();
+		if (thread == null) {
+			return;
+		}
+		thread.clearStack(cleanStackLevel);
+		thread.pushStackFrames(frames);
 		target.setVariablesDirty();
-		getThread().setVariablesDirty();
+		thread.setVariablesDirty();
 	}
 
 	public void debuggerSuspended() {
@@ -127,7 +131,7 @@ public class DebugModelManager implements IDebugEventSetListener {
 
 	public void debuggerTerminated() {
 		target.setSuspended(true);
-		getThread().setStepping(false);
+		setStepping(false);
 		fireSuspendEvent(DebugEvent.CLIENT_REQUEST);
 		// wait until the delayed event handling is finished (>500ms) before
 		// returning and sending confirmation
@@ -185,10 +189,14 @@ public class DebugModelManager implements IDebugEventSetListener {
 	private boolean checkBreakPoint() {
 		final IBreakpoint[] breakpoints = DebugPlugin.getDefault().getBreakpointManager().getBreakpoints(
 				MWEBreakpoint.DEBUG_MODEL_ID);
-		final DebugStackFrame frame = getThread().getStackFramePeek();
+		final DebugThread thread = getThread();
+		final DebugStackFrame frame = thread == null ? null : thread.getStackFramePeek();
+		if (frame == null) {
+			return false;
+		}
 		for (final IBreakpoint bp : breakpoints) {
 			if (((MWEBreakpoint) bp).equals(frame.getCharStart(), frame.getResource())) {
-				getThread().setBreakpoint((MWEBreakpoint) bp);
+				thread.setBreakpoint((MWEBreakpoint) bp);
 				return true;
 			}
 		}
@@ -297,11 +305,17 @@ public class DebugModelManager implements IDebugEventSetListener {
 	}
 
 	private void fireResumeEvent(final int detail) {
-		fireEvent(new DebugEvent(getThread(), DebugEvent.RESUME, detail));
+		final DebugThread thread = getThread();
+		if (thread != null) {
+			fireEvent(new DebugEvent(thread, DebugEvent.RESUME, detail));
+		}
 	}
 
 	private void fireSuspendEvent(final int detail) {
-		fireEvent(new DebugEvent(getThread(), DebugEvent.SUSPEND, detail));
+		final DebugThread thread = getThread();
+		if (thread != null) {
+			fireEvent(new DebugEvent(thread, DebugEvent.SUSPEND, detail));
+		}
 	}
 
 	private void fireTerminateEvent() {

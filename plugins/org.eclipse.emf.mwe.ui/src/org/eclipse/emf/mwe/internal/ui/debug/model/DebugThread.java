@@ -70,7 +70,7 @@ public class DebugThread extends DebugElement implements IThread {
 	}
 
 	public DebugStackFrame getStackFramePeek() {
-		return frames.peek();
+		return frames.isEmpty() ? null : frames.peek();
 	}
 
 	public void clearStack(final int cleanStackLevel) {

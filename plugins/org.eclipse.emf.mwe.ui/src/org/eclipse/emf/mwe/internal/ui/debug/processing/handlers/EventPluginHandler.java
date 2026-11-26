@@ -25,6 +25,7 @@ import org.eclipse.emf.mwe.internal.core.debug.communication.packages.AbstractPa
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.ConfirmationPackage;
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.EventPackage;
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.EventPackageWithFrames;
+import org.eclipse.emf.mwe.internal.ui.debug.model.DebugThread;
 import org.eclipse.emf.mwe.internal.ui.debug.processing.DebugModelManager;
 import org.eclipse.emf.mwe.internal.ui.workflow.Activator;
 
@@ -84,7 +85,10 @@ public class EventPluginHandler implements Runnable {
 	}
 
 	private void dispatch(final EventPackage packet) throws DebugException {
-		dmm.getThread().setBreakpoint(null);
+		final DebugThread thread = dmm.getThread();
+		if (thread != null) {
+			thread.setBreakpoint(null);
+		}
 
 		switch (packet.event) {
 		case STARTED:

@@ -44,13 +44,22 @@ public class VarValueTO {
 	public void writeContent(DataOutputStream out) throws IOException {
 		out.writeUTF(name);
 		out.writeInt(valueId);
-		out.writeUTF(stringRep);
+		out.writeUTF(limit(stringRep));
 		if (simpleRep == null) {
 			System.out.println("simpleRep of " + stringRep + " is null.");
 //			simpleRep = "null";
 		}
-		out.writeUTF(simpleRep);
+		out.writeUTF(limit(simpleRep));
 		out.writeBoolean(hasMembers);
+	}
+
+	// writeUTF accepts at most 65535 encoded bytes and a character takes up to 3 of them
+	static final int MAX_REP_LENGTH = 20000;
+
+	private static String limit(final String value) {
+		if (value == null || value.length() <= MAX_REP_LENGTH)
+			return value;
+		return value.substring(0, MAX_REP_LENGTH) + "...";
 	}
 
 	public void readContent(DataInputStream in) throws IOException {

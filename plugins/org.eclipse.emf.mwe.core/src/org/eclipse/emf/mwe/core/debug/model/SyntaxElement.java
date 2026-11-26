@@ -53,15 +53,25 @@ public class SyntaxElement {
 		visible = in.readBoolean();
 	}
 
+	// writeUTF accepts at most 65535 encoded bytes and a character takes up to 3 of them
+	private static final int MAX_STRING_LENGTH = 20000;
+
+	private static String limit(final String value) {
+		if (value == null) {
+			return "";
+		}
+		return value.length() <= MAX_STRING_LENGTH ? value : value.substring(0, MAX_STRING_LENGTH);
+	}
+
 	public void writeContent(final DataOutputStream out) throws IOException {
-		out.writeUTF(resource);
+		out.writeUTF(limit(resource));
 		out.writeInt(start);
 		out.writeInt(end);
 		out.writeInt(line);
 		out.writeInt(frameId);
-		out.writeUTF(containerName);
-		out.writeUTF(elementName);
-		out.writeUTF(type);
+		out.writeUTF(limit(containerName));
+		out.writeUTF(limit(elementName));
+		out.writeUTF(limit(type));
 		out.writeBoolean(visible);
 	}
 

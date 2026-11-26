@@ -98,4 +98,16 @@ public class ReflectionUtilTest extends Assert {
 		assertTrue(read.name.length() < 70000);
 		assertEquals("null", read.simpleRep);
 	}
+
+	@Test
+	public void hugeFrameStringsAreTransferable() throws Exception {
+		final org.eclipse.emf.mwe.core.debug.model.SyntaxElement se = new org.eclipse.emf.mwe.core.debug.model.SyntaxElement();
+		se.elementName = new String(new char[70000]).replace('\0', 'k');
+		final java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+		se.writeContent(new java.io.DataOutputStream(bytes));
+
+		final org.eclipse.emf.mwe.core.debug.model.SyntaxElement read = new org.eclipse.emf.mwe.core.debug.model.SyntaxElement();
+		read.readContent(new java.io.DataInputStream(new java.io.ByteArrayInputStream(bytes.toByteArray())));
+		assertTrue(read.elementName.length() < 70000);
+	}
 }

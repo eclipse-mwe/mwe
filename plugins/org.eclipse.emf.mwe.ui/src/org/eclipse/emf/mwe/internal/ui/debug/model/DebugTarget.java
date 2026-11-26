@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.core.resources.IMarkerDelta;
+import org.eclipse.emf.mwe.core.debug.model.SyntaxElement;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.resources.ResourcesPlugin;
 import org.eclipse.core.runtime.CoreException;
@@ -255,6 +256,7 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 		if (supportsBreakpoint(breakpoint)) {
 			try {
 				if (breakpoint.isEnabled()) {
+					removeMovedLocation((MWEBreakpoint) breakpoint, delta);
 					breakpointAdded(breakpoint);
 				} else {
 					breakpointRemoved(breakpoint, null);
@@ -262,6 +264,15 @@ public class DebugTarget extends DebugElement implements IDebugTarget {
 			} catch (CoreException e) {
 				// in case connection broke
 			}
+		}
+	}
+
+	// the runtime knows breakpoints by location, so a moved one would otherwise stay armed at its old place
+	private void removeMovedLocation(final MWEBreakpoint breakpoint, final IMarkerDelta delta) throws CoreException {
+		final SyntaxElement oldLocation = breakpoint.createOldTO(delta);
+		final SyntaxElement newLocation = breakpoint.createTO();
+		if (oldLocation != null && !oldLocation.equalsBP(newLocation)) {
+			dmm.requireRemoveBreakpoint(oldLocation);
 		}
 	}
 

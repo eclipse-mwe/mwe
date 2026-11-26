@@ -293,6 +293,15 @@ public class DebugModelManager implements IDebugEventSetListener {
 		}
 	}
 
+	public void requireRemoveBreakpoint(final SyntaxElement location) throws DebugException {
+		try {
+			bpHandler.sendRemoveBreakpoint(location);
+		}
+		catch (final IOException e) {
+			handleIOProblem(e);
+		}
+	}
+
 	public void handleIOProblem(final Exception e) throws DebugException {
 		throw new DebugException(Activator.createErrorStatus(
 				"lost connection to debugger runtime process --> aborting", e));

@@ -16,6 +16,7 @@ import static org.eclipse.emf.mwe.internal.core.debug.processing.handlers.Breakp
 
 import java.io.IOException;
 
+import org.eclipse.emf.mwe.core.debug.model.SyntaxElement;
 import org.eclipse.emf.mwe.internal.core.debug.communication.Connection;
 import org.eclipse.emf.mwe.internal.core.debug.communication.packages.BreakpointPackage;
 import org.eclipse.emf.mwe.internal.ui.debug.processing.DebugModelManager;
@@ -48,7 +49,11 @@ public class BreakpointPluginHandler implements PluginHandler {
 	}
 
 	public void sendRemoveBreakpoint(final MWEBreakpoint bp) throws IOException {
-		connection.sendPackage(new BreakpointPackage(REMOVE, bp.createTO()));
+		sendRemoveBreakpoint(bp.createTO());
+	}
+
+	public void sendRemoveBreakpoint(final SyntaxElement location) throws IOException {
+		connection.sendPackage(new BreakpointPackage(REMOVE, location));
 	}
 
 }

@@ -12,6 +12,7 @@
 package org.eclipse.emf.mwe.ui.debug.model;
 
 import org.eclipse.core.resources.IMarker;
+import org.eclipse.core.resources.IMarkerDelta;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.IWorkspaceRunnable;
 import org.eclipse.core.runtime.CoreException;
@@ -90,6 +91,20 @@ public class MWEBreakpoint extends LineBreakpoint {
 		se.resource = getResource();
 		se.line = getLine();
 		se.start = getOffset();
+		return se;
+	}
+
+	/**
+	 * @return the location the breakpoint had before the change, or null if it is unknown
+	 */
+	public SyntaxElement createOldTO(final IMarkerDelta delta) {
+		if (delta == null) {
+			return null;
+		}
+		final SyntaxElement se = new SyntaxElement();
+		se.resource = delta.getAttribute(RESOURCE, getResource());
+		se.line = delta.getAttribute(IMarker.LINE_NUMBER, getLine());
+		se.start = delta.getAttribute(IMarker.CHAR_START, getOffset());
 		return se;
 	}
 

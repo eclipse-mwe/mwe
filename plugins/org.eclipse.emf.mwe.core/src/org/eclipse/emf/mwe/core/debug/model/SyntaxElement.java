@@ -66,7 +66,7 @@ public class SyntaxElement {
 	}
 
 	public boolean equalsBP(final SyntaxElement se){
-		return resource.equals(se.resource) && (line == se.line) && (start == se.start);
+		return java.util.Objects.equals(resource, se.resource) && (line == se.line) && (start == se.start);
 	}
 	
 }

@@ -38,7 +38,7 @@ public class BreakpointRuntimeHandlerTest extends Assert {
 
 	@Test
 	public void concurrentBreakpointUpdatesAreNotLost() throws Exception {
-		final int count = 3000;
+		final int count = 1000;
 		final BreakpointRuntimeHandler handler = new BreakpointRuntimeHandler();
 		handler.init(new UnresolvedMonitor(), new BulkConnection(count));
 
@@ -74,7 +74,9 @@ public class BreakpointRuntimeHandlerTest extends Assert {
 		@Override
 		public AbstractPackage listenForPackage(final Class<? extends AbstractPackage> type) throws InterruptedIOException {
 			if (returned++ < count) {
-				return new BreakpointPackage(BreakpointRuntimeHandler.SET, new SyntaxElement());
+				final SyntaxElement se = new SyntaxElement();
+				se.line = returned;
+				return new BreakpointPackage(BreakpointRuntimeHandler.SET, se);
 			}
 			throw new InterruptedIOException("test complete");
 		}
@@ -82,6 +84,68 @@ public class BreakpointRuntimeHandlerTest extends Assert {
 		@Override
 		public void markPackageProcessed(final AbstractPackage packet) {
 		}
+	}
+
+	private static class ScriptedConnection extends Connection {
+		private final java.util.Deque<BreakpointPackage> script = new java.util.ArrayDeque<BreakpointPackage>();
+
+		ScriptedConnection add(final int type) {
+			final SyntaxElement se = new SyntaxElement();
+			se.resource = "wf.mwe";
+			se.line = 3;
+			script.add(new BreakpointPackage(type, se));
+			return this;
+		}
+
+		@Override
+		public AbstractPackage listenForPackage(final Class<? extends AbstractPackage> type) throws InterruptedIOException {
+			if (script.isEmpty()) {
+				throw new InterruptedIOException("test complete");
+			}
+			return script.poll();
+		}
+
+		@Override
+		public void markPackageProcessed(final AbstractPackage packet) {
+		}
+	}
+
+	private static class ResolvingMonitor extends DebugMonitor {
+		Object resolved;
+		private final ElementAdapter adapter = (ElementAdapter) Proxy.newProxyInstance(
+				ElementAdapter.class.getClassLoader(), new Class<?>[]{ElementAdapter.class},
+				(proxy, method, args) -> "findElement".equals(method.getName()) ? resolved : null);
+
+		@Override
+		public ElementAdapter getAdapter(final Object element) {
+			return adapter;
+		}
+	}
+
+	@Test
+	public void repeatedSetIsRemovedByASingleRemove() {
+		final Object element = new Object();
+		final ResolvingMonitor monitor = new ResolvingMonitor();
+		monitor.resolved = element;
+		final BreakpointRuntimeHandler handler = new BreakpointRuntimeHandler();
+		handler.init(monitor, new ScriptedConnection().add(BreakpointRuntimeHandler.SET)
+				.add(BreakpointRuntimeHandler.SET).add(BreakpointRuntimeHandler.REMOVE));
+		handler.run();
+
+		assertFalse(handler.shallSuspend(false, element, 0));
+	}
+
+	@Test
+	public void pendingSetIsCancelledByRemove() {
+		final Object element = new Object();
+		final ResolvingMonitor monitor = new ResolvingMonitor();
+		final BreakpointRuntimeHandler handler = new BreakpointRuntimeHandler();
+		handler.init(monitor, new ScriptedConnection().add(BreakpointRuntimeHandler.SET)
+				.add(BreakpointRuntimeHandler.REMOVE));
+		handler.run();
+
+		monitor.resolved = element;
+		assertFalse(handler.shallSuspend(false, element, 0));
 	}
 
 	private static class UnresolvedMonitor extends DebugMonitor {

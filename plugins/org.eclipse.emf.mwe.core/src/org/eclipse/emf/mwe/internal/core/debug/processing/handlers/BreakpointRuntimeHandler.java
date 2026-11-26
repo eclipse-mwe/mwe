@@ -125,20 +125,17 @@ public class BreakpointRuntimeHandler implements RuntimeHandler, ProcessHandler,
 		if (adapter == null)
 			return;
 		Object element = adapter.findElement(se, actual, flag);
+		// a newer SET supersedes pending requests for the same location
+		removeMatching(toBeRemovedTOs, se);
+		removeMatching(breakpointTOs, se);
 		// breakpoints may be set before the syntax element structure is
 		// instantiated
 		// in this case we store the SyntaxElement and try it again during
 		// shallSuspend(...)
 		if (element == null) {
 			breakpointTOs.add(se);
-			for (SyntaxElement cand : toBeRemovedTOs) {
-				if (se.equalsBP(cand)) {
-					toBeRemovedTOs.remove(cand);
-					break;
-				}
-			}
 		}
-		else {
+		else if (!breakpoints.contains(element)) {
 			breakpoints.add(element);
 		}
 	}
@@ -148,17 +145,21 @@ public class BreakpointRuntimeHandler implements RuntimeHandler, ProcessHandler,
 		if (adapter == null)
 			return;
 		Object element = adapter.findElement(se, actual, flag);
+		removeMatching(breakpointTOs, se);
 		if (element == null) {
+			removeMatching(toBeRemovedTOs, se);
 			toBeRemovedTOs.add(se);
-			for (SyntaxElement cand : breakpointTOs) {
-				if (se.equalsBP(cand)) {
-					breakpointTOs.remove(cand);
-					break;
-				}
-			}
 		}
 		else {
 			breakpoints.remove(element);
+		}
+	}
+
+	private void removeMatching(final List<SyntaxElement> list, final SyntaxElement se) {
+		for (java.util.Iterator<SyntaxElement> it = list.iterator(); it.hasNext();) {
+			if (se.equalsBP(it.next())) {
+				it.remove();
+			}
 		}
 	}
 

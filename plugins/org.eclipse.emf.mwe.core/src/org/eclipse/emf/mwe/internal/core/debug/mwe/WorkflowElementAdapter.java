@@ -12,7 +12,9 @@
 package org.eclipse.emf.mwe.internal.core.debug.mwe;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.emf.mwe.core.WorkflowComponent;
 import org.eclipse.emf.mwe.core.WorkflowContext;
@@ -36,6 +38,9 @@ public class WorkflowElementAdapter implements ElementAdapter {
 	private CompositeComponent root;
 
 	private final XmlLocationAnalyser locationAnalyser;
+
+	// analysing a location re-reads the source file, so remember the result per component
+	private final Map<WorkflowComponent, Integer> lineCache = new IdentityHashMap<WorkflowComponent, Integer>();
 
 	// -------------------------------------------------------------------------
 
@@ -233,8 +238,15 @@ public class WorkflowElementAdapter implements ElementAdapter {
 
 	// SAX reports the last line of a multi-line start tag; the editor and createElement use its first line
 	private int lineOf(WorkflowComponent comp) {
-		Location loc = initialize(comp.getLocation());
-		return loc != null ? loc.getLineNumber() : -1;
+		synchronized (lineCache) {
+			Integer line = lineCache.get(comp);
+			if (line == null) {
+				Location loc = initialize(comp.getLocation());
+				line = loc != null ? loc.getLineNumber() : -1;
+				lineCache.put(comp, line);
+			}
+			return line;
+		}
 	}
 
 	private boolean resourceMatches(String requestedResource, String runtimeResource) {

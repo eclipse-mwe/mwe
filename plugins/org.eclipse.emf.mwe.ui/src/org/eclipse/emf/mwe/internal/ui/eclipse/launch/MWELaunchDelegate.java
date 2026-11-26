@@ -177,6 +177,7 @@ public class MWELaunchDelegate extends AbstractJavaLaunchConfigurationDelegate {
 			runnerConfig.setWorkingDirectory(workingDirName);
 			runnerConfig.setProgramArguments(progArgs.toArray(new String[0]));
 			runnerConfig.setVMArguments(DebugPlugin.parseArguments(vmArgs));
+			runnerConfig.setEnvironment(getEnvironment(configuration));
 
 			monitor.worked(1);
 			monitor.subTask("launching debugger ...");

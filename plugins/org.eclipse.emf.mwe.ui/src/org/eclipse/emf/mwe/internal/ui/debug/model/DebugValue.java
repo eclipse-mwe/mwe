@@ -107,11 +107,8 @@ public class DebugValue extends DebugElement implements IValue {
 							varFound = true;
 							// every matched variable is still valid, regardless of how it is updated
 							oldVars.remove(var);
-							if (varTO.valueId == 0)
-								// update value for primitives
-								var.getValue0().setVarTO(varTO);
-							else if (var.getValue0().getVarTOId() != varTO.valueId) {
-								// update value information
+							// cached values are shared between variables, so a changed value is never updated in place
+							if (varTO.valueId == 0 || var.getValue0().getVarTOId() != varTO.valueId) {
 								var.setValue(varTO, frameId);
 							}
 							break;

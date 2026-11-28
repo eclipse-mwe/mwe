@@ -1,7 +1,7 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-SymbolicName: org.eclipse.emf.mwe.ui;singleton:=true
-Bundle-Version: 1.22.0.qualifier
+Bundle-Version: 1.23.0.qualifier
 Bundle-Name: %pluginName
 Bundle-Vendor: %providerName
 Bundle-Localization: plugin
@@ -20,19 +20,10 @@ Require-Bundle: org.eclipse.core.runtime,
 Bundle-RequiredExecutionEnvironment: JavaSE-21
 Bundle-ActivationPolicy: lazy
 Bundle-Activator: org.eclipse.emf.mwe.internal.ui.workflow.Activator
-Export-Package: org.eclipse.emf.mwe.internal.ui.debug.breakpoint.actions;x-friends:="org.eclipse.emf.mwe.ui.editor,org.eclipse.emf.mwe.ui.simpleEditor",
- org.eclipse.emf.mwe.internal.ui.debug.launching.ui;x-internal:=true,
- org.eclipse.emf.mwe.internal.ui.debug.model;x-internal:=true,
- org.eclipse.emf.mwe.internal.ui.debug.model.ui;x-internal:=true,
- org.eclipse.emf.mwe.internal.ui.debug.processing;x-internal:=true,
- org.eclipse.emf.mwe.internal.ui.debug.processing.handlers;x-internal:=true,
- org.eclipse.emf.mwe.internal.ui.debug.sourcelookup;x-internal:=true,
+Export-Package: org.eclipse.emf.mwe.internal.ui.debug.launching.ui;x-internal:=true,
  org.eclipse.emf.mwe.internal.ui.eclipse.launch;x-internal:=true,
  org.eclipse.emf.mwe.internal.ui.wizard;x-internal:=true,
  org.eclipse.emf.mwe.internal.ui.workflow;x-internal:=true,
- org.eclipse.emf.mwe.internal.ui.workflow.debug;x-internal:=true,
- org.eclipse.emf.mwe.ui.debug.model,
- org.eclipse.emf.mwe.ui.debug.processing,
  org.eclipse.emf.mwe.ui.workflow.util
 Automatic-Module-Name: org.eclipse.emf.mwe.ui
 

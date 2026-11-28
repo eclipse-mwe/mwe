@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.0"?>
 <plugin >
-   <extension-point id="debugHandlers" name="%extension-point.debugger.handler.name" schema="schema/handlers.exsd"/>
-   <extension-point id="debugAdapters" name="%extension-point.debugger.adapter.name" schema="schema/adapters.exsd"/>
 
 	<extension
          point="org.eclipse.team.core.fileTypes">
@@ -40,40 +38,19 @@
 	</extension>
 
 <!-- ================================================================================ -->
-<!-- debugger                                                                         -->
+<!-- launching                                                                        -->
 <!-- ================================================================================ -->
    
-   <!-- breakpoint handling -->
-   <extension
-         point="org.eclipse.core.resources.markers"
-         id="breakpointMarker">
-      <super
-            type="org.eclipse.debug.core.lineBreakpointMarker">
-      </super>
-      <persistent
-            value="true">
-      </persistent>
-   </extension>
-
-   <extension
-         point="org.eclipse.debug.core.breakpoints">
-      <breakpoint
-            markerType="org.eclipse.emf.mwe.ui.breakpointMarker"
-            class="org.eclipse.emf.mwe.ui.debug.model.MWEBreakpoint"
-            id="breakpoint">
-      </breakpoint>
-   </extension>
-
    <!-- launchConfiguration -->
    <extension
          point="org.eclipse.debug.core.launchConfigurationTypes">
       <launchConfigurationType
             id="org.eclipse.emf.mwe.ui.MWELaunchConfigType"
-            modes="run, debug"
+            modes="run"
             name="%launchConfigurationType.name"
             delegate="org.eclipse.emf.mwe.internal.ui.eclipse.launch.MWELaunchDelegate"
-            sourceLocatorId="org.eclipse.emf.mwe.ui.debug.sourceLookupDirector"
-            sourcePathComputerId="org.eclipse.emf.mwe.ui.debug.sourcePathComputer"/>
+            sourceLocatorId="org.eclipse.jdt.launching.sourceLocator.JavaSourceLookupDirector"
+            sourcePathComputerId="org.eclipse.jdt.launching.sourceLookup.javaSourcePathComputer"/>
    </extension>
    
    <extension
@@ -93,7 +70,6 @@
    </extension>
 
    <!-- launch shortcut -->
-   <!-- launch shortcut -->
    <extension
          point="org.eclipse.debug.ui.launchShortcuts">
       <shortcut
@@ -102,7 +78,7 @@
             category="org.eclipse.ui.externaltools"
 
 class="org.eclipse.emf.mwe.internal.ui.eclipse.launch.MWELaunchShortcut"
-            modes="run, debug"
+            modes="run"
             id="org.eclipse.emf.mwe.ui.debug.launching.shortcut">
         <contextualLaunch>
            <enablement>
@@ -126,58 +102,10 @@ class="org.eclipse.emf.mwe.internal.ui.eclipse.launch.MWELaunchShortcut"
            <contextLabel
               mode="run"
               label="%contextLabel.run.label"/>
-          <contextLabel
-              mode="debug"
-              label="%contextLabel.debug.label"/>
          </contextualLaunch>
       </shortcut>
    </extension>
 
-   <!-- source lookup -->
-   <extension
-         point="org.eclipse.debug.core.sourceLocators">
-      <sourceLocator
-            id="org.eclipse.emf.mwe.ui.debug.sourceLookupDirector"
-            name="%sourceLocator.name"
-            class="org.eclipse.emf.mwe.internal.ui.debug.sourcelookup.MWESourceLookupDirector"/>
-   </extension>
-
-   <extension
-         point="org.eclipse.debug.core.sourcePathComputers">
-      <sourcePathComputer
-            id="org.eclipse.emf.mwe.ui.debug.sourcePathComputer"
-            class="org.eclipse.emf.mwe.internal.ui.debug.sourcelookup.MWESourcePathComputerDelegate"/>
-   </extension>
-
-   <extension
-         point="org.eclipse.debug.ui.debugModelPresentations">
-      <debugModelPresentation
-            class="org.eclipse.emf.mwe.internal.ui.debug.model.ui.DebugModelPresentation"
-            id="org.eclipse.emf.mwe.debug.model">
-      </debugModelPresentation>
-   </extension>
-   
-   <extension
-         point="org.eclipse.emf.mwe.ui.debugHandlers">
-     <handler
-           name="Variables Handlers"
-           pluginClass="org.eclipse.emf.mwe.internal.ui.debug.processing.handlers.VariablesPluginHandler"
-           runtimeClass="org.eclipse.emf.mwe.internal.core.debug.processing.handlers.VariablesRuntimeHandler"
-           type="variablesHandler"/>
-      <handler
-            name="Breakpoint Handlers"
-            pluginClass="org.eclipse.emf.mwe.internal.ui.debug.processing.handlers.BreakpointPluginHandler"
-            runtimeClass="org.eclipse.emf.mwe.internal.core.debug.processing.handlers.BreakpointRuntimeHandler"
-            type="breakpointHandler"/>
-   </extension>
-   
-   <extension
-         point="org.eclipse.emf.mwe.ui.debugAdapters">
-      <adapter
-            name="Workflow Adapters"
-            pluginClass="org.eclipse.emf.mwe.internal.ui.workflow.debug.MWEPluginAdapter"
-            runtimeClass="org.eclipse.emf.mwe.internal.core.debug.mwe.WorkflowElementAdapter"/>
-   </extension>
    <extension
          point="org.eclipse.core.expressions.propertyTesters">
       <propertyTester

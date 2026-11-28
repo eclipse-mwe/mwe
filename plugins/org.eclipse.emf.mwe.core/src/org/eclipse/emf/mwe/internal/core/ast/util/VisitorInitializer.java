@@ -114,12 +114,14 @@ public class VisitorInitializer extends VisitorBase {
 		comp.setPassedProperties(params);
 		if (comp.getFile() != null) {
 			final WorkflowParser p = new WorkflowParser();
-			final InputStream in = loader.getResourceAsStream(translateFileURI(comp.getFile()));
+			final String fileName = translateFileURI(comp.getFile());
+			final InputStream in = loader.getResourceAsStream(fileName);
 			if (in == null) {
 				issues.addError("Couldn't load workflow fragment from " + comp.getFile(), comp);
 				return comp;
 			}
-			final AbstractASTBase ref = p.parse(in, comp.getFile(), issues);
+			// locations inside the fragment must carry the real resource path, not the '::' notation
+			final AbstractASTBase ref = p.parse(in, fileName, issues);
 			comp.setImportedElement(ref);
 			if (ref == null) {
 				issues.addError("Couldn't parse nested workflow file " + comp.getFile(), comp);

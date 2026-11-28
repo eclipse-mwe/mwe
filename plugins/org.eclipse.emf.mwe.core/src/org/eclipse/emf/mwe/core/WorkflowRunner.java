@@ -14,6 +14,7 @@ package org.eclipse.emf.mwe.core;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.apache.commons.cli.ParseException;
 import org.eclipse.emf.mwe.core.monitor.ProgressMonitor;
 import org.eclipse.emf.mwe.core.monitor.ProgressMonitor2;
 import org.eclipse.emf.mwe.core.resources.ResourceLoaderFactory;
+import org.eclipse.emf.mwe.internal.core.debug.processing.DebugMonitor;
 
 /**
  * Main class to run a workflow.
@@ -80,6 +82,23 @@ public class WorkflowRunner {
 		return new WorkflowEngine().run(workFlowFile, theMonitor, theParams, externalSlotContents);
 	}
 	
+	public boolean doRun(String[] progArgs, boolean debugMode, int port) throws Exception {
+		WorkflowEngine runner = new WorkflowEngine();
+		ProgressMonitor monitor = null;
+		if (debugMode) {
+			monitor = new DebugMonitor();
+			((DebugMonitor) monitor).init(port);
+		}
+
+		Map<String, String> params = new HashMap<String, String>();
+		try {
+			return runner.run(progArgs[0], monitor, params, null);
+		}
+		finally {
+			closeDebugMonitor(monitor);
+		}
+	}
+
 	public boolean doRun(CommandLine line, String[] args) throws Exception {
 		WorkflowEngine runner = new WorkflowEngine();
 		if (line.hasOption(ENGINE)) {
@@ -97,22 +116,35 @@ public class WorkflowRunner {
 
 		if (line.hasOption(CMDL)) {
 			// removed option --cmdLineProcessor
+			// the parsed command line decides what the workflow file is; a -p value like modelFile=input.mwe must not
+			// positional arguments may also belong to the command line processor, so the extension decides
+			wfFile = findWorkflowFile(line.getArgs());
+			boolean wfFileSkipped = false;
+			if (wfFile == null) {
+				wfFile = findWorkflowFile(monitorOptValues);
+				// it is consumed together with the other monitor values
+				wfFileSkipped = wfFile != null;
+			}
+
 			final List<String> unprocessedArgs = new ArrayList<String>();
+			final List<String> remainingMonitorValues = new ArrayList<String>();
+			if (monitorOptValues != null) {
+				remainingMonitorValues.addAll(Arrays.asList(monitorOptValues));
+			}
 			for (int i = 0; i < args.length; i++) {
 				final String arg = args[i];
 				if (arg.equals("-" + CMDL) || arg.equals("--cmdLineProcessor")) {
 					i++; // ignore this and next element
 				}
 				else if (arg.equals("-" + MONITOR) || arg.equals("--monitorClass")) {
-					// i++; // ignore this and next element
-					i = i + monitorOptValues.length;
-				}
-				else if (arg.endsWith(".oaw") || arg.endsWith(".mwe")) {
-					if (wfFile != null) {
-						throw new IllegalStateException("Workflow file already defined as '" + wfFile + "'!");
+					// skip exactly the tokens that Commons CLI assigned to the monitor option
+					// (values may be comma separated)
+					while (i + 1 < args.length && removeValues(remainingMonitorValues, args[i + 1])) {
+						i++;
 					}
-					wfFile = arg;
-					// continue the loop (will be handled later)
+				}
+				else if (!wfFileSkipped && arg.equals(wfFile)) {
+					wfFileSkipped = true;
 				}
 				else {
 					unprocessedArgs.add(arg);
@@ -131,28 +163,48 @@ public class WorkflowRunner {
 					runner.getContext());
 		} else {
 			params = resolveParams(line.getOptionValues(PARAM));
-			wfFile = line.getArgs()[0];
+			final String[] positionalArgs = line.getArgs();
+			if (positionalArgs.length > 0) {
+				wfFile = positionalArgs[0];
+			} else {
+				// The monitor option accepts multiple values, so Commons CLI may consume
+				// the workflow file when it appears after -m. In that legacy form, look
+				// only through the monitor values; scanning the raw arguments would also
+				// mistake a -p value such as modelFile=input.mwe for a second workflow.
+				wfFile = findWorkflowFile(monitorOptValues);
+			}
 		}
 
 		if ((wfFile == null) || !(wfFile.endsWith(".oaw") || wfFile.endsWith(".mwe"))) {
 			wrongCall(line);
 			return false;
 		}
+		final String[] monitorArgs = removeWorkflowFile(monitorOptValues, wfFile);
+		if ((monitorArgs != null) && (monitorArgs.length == 0)) {
+			wrongCall(line);
+			return false;
+		}
 
 		ProgressMonitor monitor = null;
 
-		if (monitorOptValues != null) {
-				final Class<?> clazz = ResourceLoaderFactory.createResourceLoader().loadClass(monitorOptValues[0]);
-				if (clazz == null) {
-					throw new ClassNotFoundException("Didn't find class " + monitorOptValues[0]);
-				}
-				monitor = (ProgressMonitor) clazz.getDeclaredConstructor().newInstance();
-				if (monitor instanceof ProgressMonitor2) {
-					((ProgressMonitor2)monitor).init(monitorOptValues);
-				}
+		if (monitorArgs != null) {
+			final Class<?> clazz = ResourceLoaderFactory.createResourceLoader().loadClass(monitorArgs[0]);
+			if (clazz == null) {
+				throw new ClassNotFoundException("Didn't find class " + monitorArgs[0]);
+			}
+			monitor = (ProgressMonitor) clazz.getDeclaredConstructor().newInstance();
+			if (monitor instanceof ProgressMonitor2) {
+				((ProgressMonitor2) monitor).init(monitorArgs);
+			} else if (monitor instanceof DebugMonitor) {
+				// this complication is because of an API problem.
+				// debug monitor throws an IOException and is not
+				// compatible with ProgressMonitor2 interface.
+				((DebugMonitor) monitor).init(monitorArgs);
+			}
 		}
 
 		// normalize wfFile name so that it can be found in the class path
+		// (necessary for debugger source lookup)
 		URL wfUrl;
 		int index = 0;
 		do {
@@ -166,18 +218,72 @@ public class WorkflowRunner {
 		} while ((wfUrl == null) && (index >= 0));
 
 		if (wfUrl == null) {
-			String msg = "can't find the workflow file '" + line.getArgs()[0] + "' in the current class path";
+			String msg = "can't find the workflow file '" + wfFile + "' in the current class path";
 				throw new IllegalStateException(msg);
 		}
 
-		return runner.run(wfFile, monitor, params, null);
+		try {
+			return runner.run(wfFile, monitor, params, null);
+		}
+		finally {
+			closeDebugMonitor(monitor);
+		}
+	}
+
+	private void closeDebugMonitor(final ProgressMonitor monitor) {
+		if (monitor instanceof DebugMonitor) {
+			((DebugMonitor) monitor).uninit();
+		}
+	}
+
+	private boolean removeValues(final List<String> values, final String token) {
+		final List<String> parts = Arrays.asList(token.split(",", -1));
+		if (!values.containsAll(parts)) {
+			return false;
+		}
+		for (final String part : parts) {
+			values.remove(part);
+		}
+		return true;
+	}
+
+	private String findWorkflowFile(final String[] args) {
+		String workflowFile = null;
+		if (args == null) {
+			return null;
+		}
+		for (final String arg : args) {
+			if (arg.endsWith(".oaw") || arg.endsWith(".mwe")) {
+				if (workflowFile != null) {
+					throw new IllegalStateException("Workflow file already defined as '" + workflowFile + "'!");
+				}
+				workflowFile = arg;
+			}
+		}
+		return workflowFile;
+	}
+
+	private String[] removeWorkflowFile(final String[] args, final String workflowFile) {
+		if (args == null || workflowFile == null) {
+			return args;
+		}
+		final List<String> remainingArgs = new ArrayList<String>(args.length);
+		boolean removed = false;
+		for (final String arg : args) {
+			if (!removed && workflowFile.equals(arg)) {
+				removed = true;
+			} else {
+				remainingArgs.add(arg);
+			}
+		}
+		return removed ? remainingArgs.toArray(new String[0]) : args;
 	}
 
 	protected static CommandLine getCommandLine(String[] args) throws ParseException {
 		final Options options = new Options();
 
 		options.addOption(Option.builder(MONITOR)
-				.hasArg()
+				.hasArgs()
 				.argName("className,moreArgs")
 				.desc(
 						"the name of a class that implements ProgressMonitor. More arguments can be appended that will be injected to the monitor,"

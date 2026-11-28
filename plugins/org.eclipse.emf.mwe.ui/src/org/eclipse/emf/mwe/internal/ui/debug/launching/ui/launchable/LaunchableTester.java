@@ -58,8 +58,14 @@ public class LaunchableTester extends PropertyTester {
 
 		try {
 			final InputStream stream = file.getContents();
+			final SAXParserFactory factory = SAXParserFactory.newInstance();
+			// workflow files never carry a DTD: reject doctypes and external entities outright
+			// (prevents XXE file access / SSRF and entity-expansion DoS)
+			factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+			factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
 			final XMLContentHandler contentHandler = new XMLContentHandler();
-			final XMLReader reader = SAXParserFactory.newInstance().newSAXParser().getXMLReader();
+			final XMLReader reader = factory.newSAXParser().getXMLReader();
 			reader.setContentHandler(contentHandler);
 			final InputSource inputSource = new InputSource(stream);
 			reader.parse(inputSource);

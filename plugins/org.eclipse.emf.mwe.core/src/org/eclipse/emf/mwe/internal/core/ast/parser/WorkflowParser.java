@@ -73,7 +73,13 @@ public class WorkflowParser extends DefaultHandler {
 		this.issues = issues;
 
 		try {
-			final SAXParser parser = SAXParserFactory.newInstance().newSAXParser();
+			final SAXParserFactory factory = SAXParserFactory.newInstance();
+			// workflow files never carry a DTD: reject doctypes and external entities outright
+			// (prevents XXE file access / SSRF and entity-expansion DoS)
+			factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+			factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+			factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+			final SAXParser parser = factory.newSAXParser();
 			parser.parse(in, this);
 		}
 		catch (final Exception e) {

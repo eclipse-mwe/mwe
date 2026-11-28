@@ -1,8 +1,8 @@
 #!/bin/sh
 
-if [ "$1" == "milestones" ]; then
+if [ "$1" = "milestones" ]; then
   REPO_NAME="EMFT MWE Update Site (Milestones)"
-elif [ "$1" == "releases" ]; then
+elif [ "$1" = "releases" ]; then
   REPO_NAME="EMFT MWE Update Site (Releases)"
 else
   echo "Error: Missing Repository Path!"

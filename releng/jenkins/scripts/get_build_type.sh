@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 # Returns BUILD_TYPE based on BUILD_ID
 #
@@ -11,11 +11,11 @@ if [ ! "$1" ]; then
     exit 1
 fi
 
-BUILD_TYPE=$(echo $1 |cut -c 1)
+BUILD_TYPE=$(printf '%s' "$1" |cut -c 1)
 
-if [ ! "$BUILD_TYPE" == "N" ] && [ ! "$BUILD_TYPE" == "S" ] && [ ! "$BUILD_TYPE" == "R" ]; then
+if [ ! "$BUILD_TYPE" = "N" ] && [ ! "$BUILD_TYPE" = "S" ] && [ ! "$BUILD_TYPE" = "R" ]; then
     echo "Invalid BUILD_ID provided" >&2
     exit 1
 fi
 
-echo $BUILD_TYPE
+printf '%s\n' "$BUILD_TYPE"
